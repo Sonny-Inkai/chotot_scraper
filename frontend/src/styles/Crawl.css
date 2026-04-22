@@ -1,0 +1,303 @@
+/* General Container */
+.crawl-container {
+  max-width: 1100px;
+  margin: 20px auto;
+  padding: 25px; /* More padding */
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.crawl-container h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 22px;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 10px;
+}
+
+.crawl-container h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #444;
+}
+
+
+/* Controls Section (Dropdowns and Button) */
+.crawl-controls {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  align-items: flex-end; /* Align items to the bottom */
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* Inherit FilterDropdown styles from FilterDropdown.css */
+/* Add specific adjustments if needed */
+.crawl-controls .filter-dropdown {
+  flex-grow: 1; /* Allow dropdowns to take space */
+  min-width: 200px; /* Ensure minimum width */
+}
+
+.crawl-controls .button-group {
+  margin-left: auto; /* Push button to the right if space allows */
+  padding-bottom: 2px; /* Align button baseline better */
+}
+
+.crawl-controls button {
+  padding: 8px 20px; /* More horizontal padding */
+  background-color: #ff8800;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  height: 38px; /* Match dropdown height */
+  transition: background-color 0.2s ease;
+  white-space: nowrap; /* Prevent button text wrapping */
+}
+
+.crawl-controls button:hover:not(:disabled) {
+  background-color: #e67a00;
+}
+
+.crawl-controls button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Progress/Status Section */
+.progress-container {
+  margin-top: 25px;
+  padding: 20px;
+  background-color: #fff; /* White background for status area */
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+}
+
+.crawl-status-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 400px; /* Limit height */
+  overflow-y: auto; /* Add scroll */
+  border: 1px solid #eee;
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
+.crawl-status-list li {
+  padding: 10px 15px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  color: #333;
+}
+
+.crawl-status-list li:last-child {
+  border-bottom: none;
+}
+
+.crawl-status-list li strong {
+  margin-right: 10px;
+  font-weight: 500;
+}
+
+/* Status specific styles */
+.crawl-status-list li.status-running {
+  color: #007bff; /* Blue for running */
+}
+
+.crawl-status-list li.status-completed {
+  color: #28a745; /* Green for completed */
+}
+.crawl-status-list li.status-completed strong::after {
+    content: " ✅"; /* Add checkmark */
+    display: inline-block;
+    margin-left: 5px;
+}
+
+
+.crawl-status-list li.status-error {
+  color: #dc3545; /* Red for error */
+  background-color: #f8d7da;
+}
+.crawl-status-list li.status-error strong::after {
+    content: " ❌"; /* Add cross mark */
+    display: inline-block;
+    margin-left: 5px;
+}
+
+
+/* Loading Indicator */
+.loading-indicator {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Overall Status Text */
+.progress-container > p {
+    font-size: 15px;
+    color: #555;
+    margin-bottom: 15px;
+}
+.progress-container > p:last-of-type {
+    margin-top: 15px;
+    font-weight: 500;
+}
+
+/* Worker Status Styles */
+.workers-info, .queue-info {
+  padding: 10px 15px;
+  background-color: #e3f2fd;
+  border-left: 4px solid #2196f3;
+  border-radius: 4px;
+  margin-bottom: 15px;
+}
+
+.workers-info p, .queue-info p {
+  margin: 0;
+  font-size: 14px;
+  color: #1565c0;
+}
+
+.overall-progress {
+  padding: 10px 15px;
+  background-color: #f3e5f5;
+  border-left: 4px solid #9c27b0;
+  border-radius: 4px;
+  margin-bottom: 15px;
+}
+
+.overall-progress p {
+  margin: 0;
+  font-size: 14px;
+  color: #7b1fa2;
+}
+
+.worker-status {
+  margin-bottom: 20px;
+}
+
+.worker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.worker-card {
+  padding: 10px 15px;
+  background-color: #e8f5e8;
+  border: 1px solid #4caf50;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #2e7d32;
+}
+
+.final-stats {
+  background-color: #f1f8e9;
+  border: 1px solid #8bc34a;
+  border-radius: 6px;
+  padding: 15px;
+  margin-top: 15px;
+}
+
+.final-stats p {
+  margin: 5px 0;
+  font-size: 14px;
+  color: #33691e;
+}
+
+.worker-final-stats {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #8bc34a;
+}
+
+.error-info {
+  background-color: #ffebee;
+  border: 1px solid #f44336;
+  border-radius: 4px;
+  padding: 10px 15px;
+  margin-top: 15px;
+}
+
+.error-info p {
+  margin: 0;
+  color: #c62828;
+  font-size: 14px;
+}
+
+.success-message {
+  color: #2e7d32;
+  font-weight: 600;
+  background-color: #e8f5e8;
+  padding: 10px 15px;
+  border-radius: 4px;
+  border: 1px solid #4caf50;
+  margin-top: 15px;
+}
+
+.warning-message {
+  color: #f57c00;
+  font-weight: 600;
+  background-color: #fff3e0;
+  padding: 10px 15px;
+  border-radius: 4px;
+  border: 1px solid #ff9800;
+  margin-top: 15px;
+}
+
+.error-message {
+  color: #c62828;
+  font-weight: 600;
+  background-color: #ffebee;
+  padding: 10px 15px;
+  border-radius: 4px;
+  border: 1px solid #f44336;
+  margin-top: 15px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .crawl-controls {
+    flex-direction: column;
+    align-items: stretch; /* Stretch items full width */
+  }
+  .crawl-controls .button-group {
+    margin-left: 0;
+    margin-top: 10px; /* Add space above button */
+    width: 100%;
+  }
+  .crawl-controls button {
+    width: 100%;
+  }
+  
+  .worker-grid {
+    grid-template-columns: 1fr;
+  }
+}

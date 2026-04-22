@@ -1,0 +1,709 @@
+/* General Container */
+.item-list-container {
+  max-width: max-content;
+  margin: auto; /* Add top/bottom margin */
+  padding: 10px; /* Center the container */
+  background-color: #ffffff; /* Light background for the whole section */
+  border-radius: 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Filters Section */
+.filters {
+  display: flex;
+  gap: 24px; /* Consistent gap */
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e0e0e0; /* Separator line */
+  flex-wrap: wrap;
+  align-items: flex-end; /* Align items to the bottom */
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  width: 200px;
+  margin-right: 10px;
+}
+
+/* Style for the standard sort select */
+.sort-filter {
+  padding: 8px 12px;
+  border: 1px solid #ccc; /* Standard border */
+  border-radius: 4px;
+  min-width: 150px;
+  background-color: white;
+  color: #333; /* Standard text color */
+  cursor: pointer;
+  font-size: 14px;
+  height: 38px; /* Match input height */
+  appearance: none; /* Remove default arrow */
+  padding-right: 30px; /* Space for custom arrow */
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23666' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 12px 12px;
+}
+
+.sort-filter:hover {
+  border-color: #999;
+}
+
+.sort-filter:focus {
+  outline: none;
+  border-color: #ff8800;
+  box-shadow: 0 0 0 2px rgba(255, 136, 0, 0.2);
+}
+
+/* Price Inputs */
+.filters input[type="text"] {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: auto; /* Fixed width */
+  font-size: 14px;
+  height: 38px; /* Match dropdown height */
+  box-sizing: border-box;
+}
+
+.filters input[type="text"]:focus {
+  outline: none;
+  border-color: #ff8800;
+  box-shadow: 0 0 0 2px rgba(255, 136, 0, 0.2);
+}
+
+/* Header Section (Select All / Get Prompt) */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 0 5px; /* Reduced padding */
+}
+
+.header-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.get-prompt-btn {
+  background-color: #ff8800;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.get-prompt-btn:hover {
+  background-color: #e67a00; /* Darker shade on hover */
+}
+
+.delete-selected-btn {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.delete-selected-btn:hover {
+  background-color: #d32f2f;
+}
+
+.select-all {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  color: #555;
+}
+
+.select-all input[type="checkbox"] {
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+}
+
+/* Item List */
+.item-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Item Card */
+.item-card {
+  border: 1px solid #e0e0e0; /* Lighter border */
+  border-radius:9px; /* Slightly less rounded */
+  overflow: hidden;
+  position: relative;
+  background: white;
+  transition: box-shadow 0.2s ease-in-out;
+  display: flex;
+  min-height: 180px; /* Min height */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.item-card:hover {
+  box-shadow: 0 4px 1px rgba(0, 0, 0, 0.08);
+}
+
+.item-content {
+  display: flex;
+  flex: 1;
+  padding: 15px; /* Slightly more padding */
+  gap: 20px; /* Increased gap */
+}
+
+/* Item Image */
+.item-image-link { /* Style the link wrapper */
+  display: block; /* Make it a block element */
+  flex-shrink: 0;
+}
+
+.item-image {
+  width: 210px; /* Slightly smaller */
+  height: 210px;
+  border-radius: 6px;
+  overflow: hidden; /* Ensure image stays within bounds */
+}
+
+.item-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block; /* Remove potential bottom space */
+  transition: transform 0.3s ease;
+}
+
+.item-image-link:hover .item-image img {
+    transform: scale(1.05); /* Slight zoom on hover */
+}
+
+
+/* Item Details */
+.item-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px; /* Reduced gap */
+  overflow: hidden; /* Prevent content overflow */
+}
+
+.item-details h3 {
+  margin: 0 0 4px 0; /* Add bottom margin */
+  font-size: 17px; /* Slightly smaller */
+  color: #333;
+  line-height: 1.3;
+  font-weight: 500; /* Less bold */
+  /* Prevent long titles from breaking layout */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.price {
+  font-size: 18px; /* Slightly smaller */
+  font-weight: bold;
+  color: #d0021b; /* Chotot red price color */
+  margin: 0 0 4px 0;
+}
+
+.location {
+  color: #555; /* Darker gray */
+  font-size: 13px;
+  margin: 0 0 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.location::before {
+  content: "📍";
+  opacity: 0.7;
+}
+
+.description {
+  color: #444;
+  font-size: 14px;
+  margin: 0 0 8px 0; /* Add bottom margin */
+  line-height: 1.4;
+  /* Limit description lines */
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* Show max 2 lines */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Specs */
+.specs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px; /* Row and column gap */
+  margin-top: 4px;
+  margin-bottom: 8px; /* Add bottom margin */
+}
+
+.spec-item {
+  font-size: 12px; /* Smaller spec text */
+  color: #666;
+  background: #f0f0f0; /* Lighter background */
+  padding: 3px 7px; /* Adjust padding */
+  border-radius: 3px;
+  white-space: nowrap; /* Prevent wrapping */
+}
+
+/* User Info */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto; /* Push to bottom */
+}
+
+.user-avatar {
+  width: 20px; /* Smaller avatar */
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-info span {
+  color: #555;
+  font-size: 13px;
+}
+
+/* Item Checkbox */
+.item-checkbox {
+  top: 15px;
+  right: 15px;
+  width: 18px; /* Adjust size */
+  height: 18px;
+  cursor: pointer;
+  z-index: 1;
+  accent-color: #ff8800; /* Style checkbox color */
+}
+
+/* Update Time */
+.update-time {
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  font-size: 12px;
+  color: #777; /* Lighter gray */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .item-card {
+    min-height: unset; /* Allow height to adjust */
+  }
+
+  .item-content {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .item-image {
+    width: 100%;
+    height: 200px; /* Fixed height for mobile */
+  }
+
+  .filters {
+    gap: 10px;
+  }
+
+  .filters .filter-group,
+  .filters input[type="text"],
+  .filters .sort-filter {
+    width: calc(50% - 5px); /* Two columns on smaller screens */
+  }
+}
+
+@media (max-width: 480px) {
+  .filters .filter-group,
+  .filters input[type="text"],
+  .filters .sort-filter {
+    width: 80%; /* Full width on very small screens */
+  }
+  .item-details h3 {
+      font-size: 16px;
+  }
+  .price {
+      font-size: 17px;
+  }
+}
+
+.top-right-controls {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.evaluation-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #d9d4d3;
+  padding: 4px 8px;
+  border-radius: 9px;
+  box-shadow: 0 2px 4px rgba(87, 52, 52, 0.1);
+}
+
+.evaluation-icon {
+  font-size: 18px;
+  cursor: default;
+}
+
+.evaluation-text {
+  font-size: 15px;
+  color: #0b0b0b;
+  cursor: pointer;
+  padding: 2px 3px;
+  border-radius: 2px;
+  transition: background-color 0.2s;
+  
+}
+
+.evaluation-text:hover {
+  background-color: #f0f0f0;
+
+  
+}
+
+.evaluation-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.evaluation-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 400px;
+  max-width: 90%;
+}
+
+.evaluation-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 15px 0;
+}
+
+.evaluation-options label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.evaluation-options label:hover {
+  background-color: #ea5555;
+}
+
+.evaluation-content textarea {
+  width: 100%;
+  height: 100px;
+  padding: 8px;
+  border: 15px solid #ddd;
+  border-radius: 4px;
+  margin: 10px 0;
+  resize: vertical;
+}
+
+.evaluation-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.evaluation-buttons button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.evaluation-buttons button:first-child {
+  background: #4CAF50;
+  color: white;
+}
+
+.evaluation-buttons button:last-child {
+  background: #f44336;
+  color: white;
+}
+
+.evaluate-btn {
+  margin-top: 10px;
+  padding: 6px 12px;
+  background: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.bulk-evaluate-btn {
+  display: flex;
+  padding: 8px 16px;
+  background: #ff8800;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+
+.bulk-evaluation-modal {
+  position: fixed;
+  display: flex;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.bulk-evaluation-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 600px;
+  max-width: 90%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.bulk-evaluation-input {
+  width: 100%;
+  height: 300px;
+  padding: 12px;
+  margin: 15px 0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.bulk-evaluation-error {
+  color: #f44336;
+  margin: 10px 0;
+  padding: 8px;
+  background: #ffebee;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.bulk-evaluation-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.bulk-evaluation-buttons button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.bulk-evaluation-buttons button:first-child {
+  background: #4CAF50;
+  color: white;
+}
+
+.bulk-evaluation-buttons button:last-child {
+  background: #f44336;
+  color: white;
+}
+
+/* Add styling for the ID search input */
+.id-search-input {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 220px;
+  font-size: 14px;
+}
+
+.id-search-input::placeholder {
+  color: #aaa;
+}
+
+.id-search-input:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  outline: none;
+}
+
+.reset-filters-btn {
+  background-color: #f8f9fa;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-left: 5px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.reset-filters-btn:hover {
+  background-color: #e9ecef;
+}
+
+.id-search-container {
+  display: flex;
+  align-items: center;
+  margin-right: 10px;
+}
+
+/* Add this CSS rule for the new delete buttons */
+.delete-type-btn {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 8px;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.delete-type-btn:hover {
+  background-color: #d32f2f;
+}
+
+/* Type-specific button colors */
+.delete-type-btn:nth-of-type(3) {
+  background-color: #ff9800; /* Orange for Type 2 */
+}
+
+.delete-type-btn:nth-of-type(3):hover {
+  background-color: #f57c00;
+}
+
+/* Filter delete button */
+.delete-filtered-btn {
+  background-color: #9c27b0; /* Purple color for filter delete */
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 8px;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.delete-filtered-btn:hover {
+  background-color: #7b1fa2;
+}
+
+/* Marketplace filter */
+.marketplace-filter {
+  display: flex;
+  align-items: center;
+  margin-right: 10px;
+}
+
+.marketplace-checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #f8f9fa;
+  transition: background-color 0.3s;
+}
+
+.marketplace-checkbox-label:hover {
+  background-color: #e9ecef;
+}
+
+.marketplace-checkbox {
+  margin-right: 8px;
+  cursor: pointer;
+  accent-color: #4267B2; /* Facebook blue */
+}
+
+.marketplace-checkbox:checked + span {
+  font-weight: 500;
+  color: #4267B2; /* Facebook blue */
+}
+
+.toast-notification {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #4CAF50;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  z-index: 1000;
+  animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 2.7s;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+

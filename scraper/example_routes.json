@@ -1,0 +1,42 @@
+[
+  {
+    "category": 5010,
+    "region": 13,
+    "description": "Điện thoại in TP HCM"
+  },
+  {
+    "category": 5030,
+    "region": 13,
+    "description": "Laptop in TP HCM"
+  },
+  {
+    "category": 5010,
+    "region": 12,
+    "description": "Điện thoại in Hà Nội"
+  },
+  {
+    "category": 5030,
+    "region": 12,
+    "description": "Laptop in Hà Nội"
+  },
+  {
+    "category": 2010,
+    "region": 13,
+    "description": "Ô tô in TP HCM"
+  },
+  {
+    "category": 2020,
+    "region": 13,
+    "description": "Xe máy in TP HCM"
+  },
+  {
+    "category": 1010,
+    "region": 13,
+    "description": "Căn hộ/Chung cư in TP HCM"
+  },
+  {
+    "category": 1020,
+    "region": 13,
+    "description": "Nhà ở in TP HCM"
+  }
+] 

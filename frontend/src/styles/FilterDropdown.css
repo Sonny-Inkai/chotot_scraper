@@ -1,0 +1,131 @@
+.filter-dropdown {
+    position: relative; /* For absolute positioning of dropdown list */
+    width: 100%; /* Full width of the parent container */
+    max-width: 300px; /* Optional: Set a max width for the dropdown */
+    margin: 0 auto; /* Center the dropdown */
+    font-family: Arial, sans-serif; /* Use a clean font */
+    font-size: 14px; /* Base font size */
+    color: #333; /* Text color */
+    background-color: #fff; /* Background color */
+    border-radius: 4px; /* Rounded corners */
+}
+
+.filter-dropdown.disabled {
+  opacity: 0.5;
+  pointer-events: none; /* Disable all interactions */
+  cursor: not-allowed;
+}
+
+.dropdown-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.9em;
+  color: #555;
+}
+
+.dropdown-header {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px 12px;
+  background-color: #fff;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 38px; /* Match button height */
+}
+
+.filter-dropdown.disabled .dropdown-header {
+  cursor: not-allowed;
+  background-color: #eee;
+}
+
+
+.dropdown-header span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding-right: 5px;
+}
+
+
+.dropdown-arrow {
+  transition: transform 0.2s ease-in-out;
+  font-size: 0.8em;
+}
+
+.dropdown-arrow.open {
+  transform: rotate(180deg);
+}
+
+.dropdown-list-container {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  z-index: 1000; /* Ensure it appears above other elements */
+  max-height: 300px; /* Limit height */
+  overflow-y: auto; /* Add scroll for long lists */
+}
+
+.dropdown-search {
+  width: calc(100% - 20px); /* Full width minus padding */
+  padding: 8px 10px;
+  border: none;
+  border-bottom: 1px solid #eee;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.dropdown-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dropdown-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex; /* Use flex for alignment */
+  align-items: center; /* Vertically align items */
+}
+
+.dropdown-item:hover {
+  background-color: #f0f0f0;
+}
+
+.dropdown-item.no-results {
+  color: #888;
+  cursor: default;
+}
+
+.dropdown-item.select-all-item {
+  border-bottom: 1px solid #eee;
+  font-weight: bold;
+}
+
+
+/* Styling for checkboxes within the dropdown */
+.dropdown-item input[type="checkbox"] {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.dropdown-item label {
+  cursor: pointer;
+  flex-grow: 1; /* Allow label to take remaining space */
+}
+
+/* Styling for single select options */
+.dropdown-item .option {
+    width: 100%; /* Ensure it takes full width for clicking */
+}
+.dropdown-item .option.selected {
+  font-weight: bold;
+  background-color: #e0e0e0; /* Highlight selected */
+}

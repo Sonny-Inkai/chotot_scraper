@@ -1,0 +1,14 @@
+[
+    {
+        "title": "Modern Sofa Set",
+        "price": 500,
+        "category": "Furniture",
+        "condition": "New",
+        "description": "Beautiful modern sofa set in excellent condition. Perfect for living room. Includes 3-seater sofa and 2 armchairs.",
+        "tags": ["sofa", "furniture", "living room", "modern"],
+        "location": "Ho Chi Minh City",
+        "image_urls": [
+            "https://cdn.chotot.com/zeHEt67zoTITh7gtF1HSYEL7yU9-1bG4UHC4tynJB7E/preset:view/plain/19b092295934215f5813dab544cf564b-2929934326459220051.jpg"
+        ]
+    }
+] 

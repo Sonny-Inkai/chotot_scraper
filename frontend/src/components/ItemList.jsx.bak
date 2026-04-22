@@ -1,0 +1,3102 @@
+import React, { useState, useEffect } from 'react'; // Removed useMemo
+import axios from 'axios';
+import FilterDropdown from './FilterDropdown'; // Import the new component
+import Pagination from './Pagination';
+import '../styles/ItemList.css';
+
+const CATEGORIES = {
+  'dien-thoai': 'Điện thoại',
+  'laptop': 'Laptop',
+  'may-tinh-bang': 'Máy tính bảng',
+  'may-anh-may-quay': 'Máy ảnh, Máy quay',
+  'phu-kien': 'Phụ kiện (Màn hình, Chuột...)',
+  'may-tinh-de-ban': 'Máy tính để bàn',
+  'thiet-bi-deo-thong-minh': 'Thiết bị đeo thông minh'
+};
+
+const PROVINCES = {
+  'tp-ho-chi-minh': 'TP Hồ Chí Minh',
+  'ha-noi': 'Hà Nội',
+  'binh-duong': 'Bình Dương',
+  'dong-nai': 'Đồng Nai',
+  'ba-ria-vung-tau': 'Bà Rịa - Vũng Tàu',
+  'hai-phong': 'Hải Phòng',
+  'quang-ninh': 'Quảng Ninh',
+  'bac-ninh': 'Bắc Ninh',
+  'thanh-hoa': 'Thanh Hóa',
+  'hai-duong': 'Hải Dương',
+  'long-an': 'Long An',
+  'bac-giang': 'Bắc Giang',
+  'vinh-phuc': 'Vĩnh Phúc',
+  'da-nang': 'Đà Nẵng',
+  'can-tho': 'Cần Thơ',
+  'thai-nguyen': 'Thái Nguyên',
+  'hung-yen': 'Hưng Yên',
+  'khanh-hoa': 'Khánh Hòa',
+  'nghe-an': 'Nghệ An',
+  'kien-giang': 'Kiên Giang',
+  'tien-giang': 'Tiền Giang',
+  'lam-dong': 'Lâm Đồng',
+  'dak-lak': 'Đắk Lắk',
+  'quang-ngai': 'Quảng Ngãi',
+  'binh-dinh': 'Bình Định',
+  'quang-nam': 'Quảng Nam',
+  'an-giang': 'An Giang',
+  'dong-thap': 'Đồng Tháp',
+  'tay-ninh': 'Tây Ninh',
+  'binh-thuan': 'Bình Thuận',
+  'binh-phuoc': 'Bình Phước',
+  'nam-dinh': 'Nam Định',
+  'ha-tinh': 'Hà Tĩnh',
+  'gia-lai': 'Gia Lai',
+  'phu-tho': 'Phú Thọ',
+  'ninh-binh': 'Ninh Bình',
+  'tra-vinh': 'Trà Vinh',
+  'ca-mau': 'Cà Mau',
+  'vinh-long': 'Vĩnh Long',
+  'soc-trang': 'Sóc Trăng',
+  'thua-thien-hue': 'Thừa Thiên Huế',
+  'lao-cai': 'Lào Cai',
+  'ben-tre': 'Bến Tre',
+  'thai-binh': 'Thái Bình',
+  'hau-giang': 'Hậu Giang',
+  'bac-lieu': 'Bạc Liêu',
+  'hoa-binh': 'Hòa Bình',
+  'phu-yen': 'Phú Yên',
+  'quang-binh': 'Quảng Bình',
+  'ninh-thuan': 'Ninh Thuận',
+  'ha-nam': 'Hà Nam',
+  'son-la': 'Sơn La',
+  'dak-nong': 'Đắk Nông',
+  'quang-tri': 'Quảng Trị',
+  'tuyen-quang': 'Tuyên Quang',
+  'lang-son': 'Lạng Sơn',
+  'yen-bai': 'Yên Bái',
+  'kon-tum': 'Kon Tum',
+  'ha-giang': 'Hà Giang',
+  'dien-bien': 'Điện Biên',
+  'lai-chau': 'Lai Châu',
+  'cao-bang': 'Cao Bằng',
+  'bac-kan': 'Bắc Kạn'
+}
+
+const EVALUATED_TYPES = {
+  '0': '⚪ Chưa xử lý', // None
+  '1': '🟢 Nên mua',    // Should Buy
+  '2': '🟡 Thương lượng', // Negotiable
+  '3': '🔴 Không mua'   // Don't Buy
+};
+
+const ItemList = () => {
+  const [items, setItems] = useState([]);
+  const [selectedItems, setSelectedItems] = useState(new Set());
+  const [filters, setFilters] = useState({
+    category: '',
+    province: '',
+    minPrice: '',
+    maxPrice: '',
+    sortBy: 'newest',
+    evaluatedType: '',
+    page: 1,
+    itemIds: '',
+  });
+  const [pagination, setPagination] = useState({
+    total: 0,
+    totalPages: 0,
+    currentPage: 1,
+    limit: 10
+  });
+  const [evaluationState, setEvaluationState] = useState({
+    itemId: null,
+    type: '',
+    note: '',
+    isOpen: false
+  });
+  const [bulkEvaluationState, setBulkEvaluationState] = useState({
+    isOpen: false,
+    jsonInput: '',
+    error: null
+  });
+
+  // Convert Vietnamese time string to timestamp
+  const getTimeInMilliseconds = (timeString) => {
+    const now = new Date();
+    const number = parseInt(timeString.split(' ')[0]);
+    const unit = timeString.split(' ')[1];
+
+    switch (unit) {
+      case 'phút':
+      case 'phút trước':
+        return now.getTime() - (number * 60 * 1000);
+      case 'giờ':
+      case 'giờ trước':
+        return now.getTime() - (number * 60 * 60 * 1000);
+      case 'ngày':
+      case 'ngày trước':
+        return now.getTime() - (number * 24 * 60 * 60 * 1000);
+      case 'tuần':
+      case 'tuần trước':
+        return now.getTime() - (number * 7 * 24 * 60 * 60 * 1000);
+      case 'tháng':
+      case 'tháng trước':
+        return now.getTime() - (number * 30 * 24 * 60 * 60 * 1000);
+      case 'năm':
+      case 'năm trước':
+        return now.getTime() - (number * 365 * 24 * 60 * 60 * 1000);
+      default:
+        return now.getTime();
+    }
+  };
+
+  useEffect(() => {
+    fetchItems();
+  }, [filters]);
+
+  const fetchItems = async () => {
+    try {
+      // Create a copy of filters to modify
+      const params = { ...filters };
+      
+      // Process itemIds if they exist
+      if (params.itemIds) {
+        // Split by comma, trim whitespace, and filter out empty strings
+        params.itemIds = params.itemIds.split(',')
+          .map(id => id.trim())
+          .filter(id => id !== '')
+          .join(',');
+      }
+      
+      // Remove empty filters
+      Object.keys(params).forEach(key => {
+        if (params[key] === '') {
+          delete params[key];
+        }
+      });
+      
+      const response = await axios.get('http://localhost:5001/api/items', { params });
+      
+      let sortedItems = [...response.data.items];
+      
+      // Sort items based on selected option - only time-based sorting needs client-side handling
+      if (filters.sortBy === 'newest') {
+        sortedItems.sort((a, b) => {
+          const timeA = getTimeInMilliseconds(a.update_time);
+          const timeB = getTimeInMilliseconds(b.update_time);
+          return timeB - timeA;
+        });
+      }
+      // All other sorting (price-high, price-low, roi-high) is handled by the server
+      
+      setItems(sortedItems);
+      setPagination(response.data.pagination);
+    } catch (error) {
+      console.error('Error fetching items:', error);
+    }
+  };
+
+  const handleCheckboxChange = (itemId) => {
+    const newSelected = new Set(selectedItems);
+    if (newSelected.has(itemId)) {
+      newSelected.delete(itemId);
+    } else {
+      newSelected.add(itemId);
+    }
+    setSelectedItems(newSelected);
+  };
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedItems(new Set(items.map(item => item._id)));
+    } else {
+      setSelectedItems(new Set());
+    }
+  };
+
+  const handleFilterChange = (name, value) => {
+    setFilters(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSortChange = (e) => {
+      const { name, value } = e.target;
+      setFilters(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleGetPrompt = () => {
+    const selectedItemsData = items.filter(item => selectedItems.has(item._id));
+
+    if (selectedItemsData.length === 0) {
+        alert('Vui lòng chọn ít nhất một sản phẩm để tạo prompt.');
+        return;
+    }
+
+    // --- Phần Hướng dẫn Đầu (Giữ nguyên) ---
+    const promptIntro = `Bạn là một chuyên gia mua bán sản phẩm công nghệ cũ tại Việt Nam. Nhiệm vụ của bạn là đánh giá các sản phẩm được rao bán dưới đây để quyết định xem có nên mua hay không, dựa trên khả năng bán lại nhanh chóng và lợi nhuận tiềm năng.
+    Tham khảo giá thu củ đổi mới tại các cửa hàng công nghệ fpt, thegioididong, https://cellphones.com.vn/thu-cu-doi-moi, các cửa hàng tại việt nam, hãy tham khảo trên internet thông tin chính xác nhất. hãy đánh giá như 1 người thợ thầy, trả giá mua thấp hơn các cửa hàng, vậy thì mới cạnh tranh giá bán lại được.
+
+Hãy thực hiện các bước sau để đánh giá từng sản phẩm:
+
+1.  Phân tích thông tin chi tiết của sản phẩm để xác định giá trị thực của nó.
+2.  Đánh giá tình trạng thị trường hiện tại cho dòng sản phẩm này tại Việt Nam.
+3.  Xác định xem sản phẩm có thể bán lại nhanh chóng hay không (mục tiêu là bán nhanh).
+4.  Ước tính lợi nhuận tiềm năng nếu mua sản phẩm với giá rao bán hiện tại.`;
+
+
+    // --- Phần Hướng dẫn Cuối & Định dạng (Giữ nguyên) ---
+    const promptConclusion = `Hãy nghiên cứu thị trường cho từng dòng máy, nếu thu lại có bán nhanh được không, biên độ lãi là bao nhiêu. Thời gian bán lại phải nhanh.
+
+Vui lòng cung cấp đánh giá cho TẤT CẢ các sản phẩm đã liệt kê ở trên theo định dạng JSON array chính xác như sau:
+\`\`\`json
+[
+  {
+    "_id": "item_id_cua_san_pham_1", // ID sản phẩm dạng string
+    "type": 1, // 1: Nên mua, 2: Thương lượng, 3: Không mua
+    "buy_price": 1000000, // Giá mua đề xuất (VND) - phải thấp hơn giá thị trường ít nhất 15-20% để đảm bảo lợi nhuận, thấp hơn giá các cửa hàng, thợ, nhưng vẫn hợp lý để thương lượng.
+    "sell_price": 1200000, // Giá bán dự kiến (VND) - giá bán ra rẻ hơn thị trường 5-10%, đảm bảo lợi nhuận tối thiểu 15-20%, và phải bán được trong vòng 1-2 tuần. 
+    "new_title": "iPhone 11 Pro 64GB Xám - Pin 90% - Bảo hành 3 tháng", // Tiêu đề đã tối ưu SEO với đầy đủ thông tin quan trọng
+    "note": "Phân tích chi tiết: [Phân tích thị trường chi tiết] ngắn gọn. Tình trạng: [Đánh giá cụ thể về tình trạng sản phẩm]. Hãy chọn những sản phẩm, RẤT NÊN MUA, KÈO THƠM trong note Giá thị trường hiện tại từ [X] đến [Y]. Lợi nhuận dự kiến: [Z]%. Tin nhắn đề xuất: \"Em đang tìm máy để dùng cá nhân, em thấy máy anh/chị còn đẹp, em có thể mua với giá [giá cụ thể (dựa vào buy price)] được không ạ?\", thật súc tích, ngắn gọn.",
+  },
+
+  // Chỉ có type 1 cần thêm nhiều filed thông tin, Nếu type 2, 3 chỉ cần type và note, nêu lý do cần thương lượng và giá/điều kiện đề xuất với người bán. Nếu type 3, nêu lý do không mua ngắn gọn.  
+
+  {
+    "_id": "item_id_cua_san_pham_2", // ID sản phẩm dạng string
+    "type": 2, 
+    "note": "Ví dụ: Giá rao hơi cao so với thị trường, cần thương lượng giảm X đồng." 
+  },
+  {
+    "_id": "item_id_cua_san_pham_3", // ID sản phẩm dạng string
+    "type": 3, 
+    "note": "Giá rao quá cao." 
+  }
+  // ... thêm các object cho các sản phẩm khác đã được cung cấp
+]
+\`\`\`
+
+Lưu ý quan trọng:
+Đối với các sản phẩm được đánh giá là "type: 1" (Nên mua), phảiCỰC KỲ KỸ LƯỠNG trước khi lựa chọn, nhớ nha phải thật cân nhắc, những sản phẩm RẤT NÊN MUA, KÈO THƠM thì mới chọn:
+- Nghiên cứu thị trường kỹ lưỡng: Xác định chính xác nhu cầu thực tế cho dòng sản phẩm này tại Việt Nam. Phân tích xu hướng tiêu dùng hiện tại, mức độ phổ biến của model này. So sánh với các model mới hơn để đánh giá khả năng lỗi thời.
+- Đánh giá tình trạng: Phân tích chi tiết dựa vào mô tả và hình ảnh. Đặc biệt chú ý đến tình trạng màn hình, pin, các vết trầy xước, dấu hiệu sửa chữa, thay thế linh kiện. Đánh giá mức độ ảnh hưởng của các khiếm khuyết đến giá trị và khả năng bán lại.
+- Định giá mua (buy_price): Phải tính toán cực kỹ để đảm bảo lợi nhuận. Tham khảo giá thu cũ của các cửa hàng lớn và giá thực tế đang giao dịch trên thị trường. Phải thấp hơn đáng kể so với giá thị trường nhưng vẫn hợp lý đối với người bán. Chênh lệch giữa giá mua và giá bán dự kiến phải có biên lợi nhuận tối thiểu 15-20% sau khi trừ các chi phí (vận chuyển, kiểm tra, bảo quản).
+- Định giá bán (sell_price): Phải thấp hơn ít nhất 5-10% so với giá thị trường của sản phẩm tương tự để đảm bảo bán nhanh, không thấp hơn giá của người bán đề xuất, tại vì thấp hơn thì người bán tự bán chứ bán cho mình làm gì, nhưng vẫn đủ cao để có lợi nhuận. Cân nhắc kỹ yếu tố cạnh tranh và tốc độ bán hàng.
+- Nghĩa là buy_price thấp hơn Giá Được Người Dùng Rao Bán, Giá Được Người Dùng Rao Bán lại thấp hơn sell_price. 
+- Tốc độ bán lại: Phải đánh giá chính xác khả năng bán trong vòng 1-2 tuần. Các sản phẩm mất hơn 2 tuần để bán sẽ ảnh hưởng đến dòng tiền và tỷ suất lợi nhuận thực tế. Chỉ chọn những sản phẩm có khả năng bán nhanh cao.
+- Phân tích rủi ro: Đánh giá toàn diện các rủi ro như sản phẩm có thể có lỗi tiềm ẩn, khả năng giảm giá đột ngột (do ra mắt model mới), chi phí sửa chữa nếu phát hiện vấn đề sau khi mua. Chỉ chọn mua khi rủi ro thấp.
+- Tối ưu tin đăng: "new_title" phải được tối ưu SEO, nêu bật những đặc điểm quan trọng nhất của sản phẩm (model, dung lượng, màu sắc, tình trạng pin, bảo hành) để thu hút người mua tiềm năng khi đăng bán lại.
+- Cân nhắc tính thanh khoản dài hạn: Đánh giá khả năng duy trì giá trị của sản phẩm trong 1-2 tháng tới nếu không bán được ngay. Tránh các sản phẩm có nguy cơ mất giá nhanh.
+  
+- Dựa vào các thông tin như description, ưu tiên mua của người bán không rành giá hoặc cần tiền gấp, dựa vào tiêu đề thông tin chi tiết, xem xét câu từ, icon (thường người bán chuyên sẽ viết des có icon, sử dụng từ chuyên ngành), ... để xem người bán có phải thợ, chuyên nghiệp, tránh những người này vì mua sẽ không có lời.
+- Đảm bảo trả về một JSON array hợp lệ chứa đối tượng đánh giá cho TẤT CẢ các sản phẩm được cung cấp ở trên.
+- Các sản phẩm là độc lập, đánh giá riêng lẻ từng cái.
+- ID sản phẩm trong JSON phải là kiểu string.
+- KHÔNG BAO GIỜ mua các sản phẩm quá cũ (thường là 3-4 năm trở lên), quá lỗi thời, hoặc có dấu hiệu hư hỏng.
+- Trả giá mua thấp hơn các cửa hàng 15-20% để đảm bảo lợi nhuận. Yêu cầu tuyệt đối: sản phẩm phải bán lại được trong vòng 1-2 tuần.
+- Phân tích chi tiết lý do với các sản phẩm type 1, đặc biệt là phân tích thị trường, tình trạng sản phẩm, lợi nhuận dự kiến và thời gian bán ước tính.
+`;
+
+    // --- Tạo chuỗi thông tin động cho từng sản phẩm ---
+    const itemDataStrings = selectedItemsData.map((item, index) => {
+        // Hàm helper (giữ nguyên)
+        const getSafe = (obj, path, defaultValue = null) => { // Thay đổi defaultValue thành null để dễ kiểm tra hơn
+            const keys = Array.isArray(path) ? path : path.replace(/\[(\w+)\]/g, '.$1').replace(/^\./, '').split('.');
+            let result = obj;
+            for (const key of keys) {
+                if (result === null || typeof result !== 'object') return defaultValue;
+                result = result[key];
+                if (result === undefined) return defaultValue;
+            }
+            return result; // Trả về giá trị tìm được hoặc null
+        };
+
+        // --- Bắt đầu xây dựng chuỗi cho sản phẩm này ---
+        let detailsString = `--- Thông tin Sản phẩm ${index + 1} ---\n`;
+
+        // 1. Thêm các thông tin cố định, quan trọng
+        const id = getSafe(item, '_id');
+        if (id !== null) detailsString += `- ID Sản Phẩm: "${id}"\n`; // Đảm bảo ID là string
+
+        const categoryKey = getSafe(item, 'item_category');
+        const categoryDisplay = categoryKey ? (CATEGORIES[categoryKey] || categoryKey) : null;
+        if (categoryDisplay) detailsString += `- Loại Sản Phẩm: ${categoryDisplay}\n`;
+
+        const title = getSafe(item, 'title');
+        if (title) detailsString += `- Tiêu Đề: ${title}\n`;
+
+        const price = getSafe(item, 'price_str');
+        if (price) detailsString += `- Giá Được Người Dùng Rao Bán: ${price}\n`;
+
+        const updateTime = getSafe(item, 'update_time');
+        if (updateTime) detailsString += `- Thời Gian Đăng: ${updateTime}\n`;
+
+        const location = getSafe(item, 'location.full_location');
+        if (location) detailsString += `- Địa Điểm: ${location}\n`;
+
+        // 2. Thêm TOÀN BỘ thong_tin_chi_tiet dưới dạng JSON string được định dạng
+        const thongTinChiTietObj = getSafe(item, 'thong_tin_chi_tiet');
+        if (typeof thongTinChiTietObj === 'object' && thongTinChiTietObj !== null && Object.keys(thongTinChiTietObj).length > 0) {
+             detailsString += `- Thông Tin Chi Tiết Khác:\n`;
+             // Sử dụng JSON.stringify để chuyển đổi cả object thành chuỗi JSON
+             // Tham số thứ 3 (số 2) để tạo thụt lề, giúp dễ đọc hơn
+             detailsString += JSON.stringify(thongTinChiTietObj, null, 2);
+        } else {
+             // Có thể bỏ qua nếu không có thông tin chi tiết
+             // detailsString += `- Thông Tin Chi Tiết Khác: Không có\n`;
+        }
+
+
+        // 3. Thêm mô tả của người bán (quan trọng)
+        const description = getSafe(item, 'detailed_description');
+        if (description) {
+            detailsString += `- Mô Tả Người Bán: ${description.replace(/\n+/g, ' ')}\n`; // Thay nhiều newline bằng 1 space
+        }
+
+        return detailsString.trim(); // Loại bỏ khoảng trắng thừa
+
+    }).join('\n\n'); // Ngăn cách các sản phẩm bằng dòng trống
+
+
+    // --- Kết hợp các phần để tạo prompt cuối cùng ---
+    const finalPrompt = `${promptIntro}
+
+Hãy đánh giá các sản phẩm có thông tin chi tiết như sau:
+
+${itemDataStrings}
+
+${promptConclusion}`;
+
+    // Sao chép vào clipboard và thông báo
+    navigator.clipboard.writeText(finalPrompt);
+    alert(`Prompt đã được tạo và sao chép cho ${selectedItemsData.length} sản phẩm!`);
+};
+
+  const formatInputPrice = (value) => {
+    if (!value) return '';
+    return new Intl.NumberFormat('vi-VN').format(value);
+  };
+
+  const handlePriceInputChange = (e) => {
+    const { name, value } = e.target;
+    const numericValue = value.replace(/\D/g, '');
+    setFilters(prev => ({ ...prev, [name]: numericValue }));
+  };
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(price).replace('₫', 'đ');
+  };
+
+  const renderSpecs = (item) => {
+    const specs = [];
+    if (item.thong_tin_chi_tiet) {
+      for (const [key, value] of Object.entries(item.thong_tin_chi_tiet)) {
+        specs.push(
+          <span key={key} className="spec-item">
+            {key}: {value}
+          </span>
+        );
+      }
+    }
+    return specs;
+  };
+
+  const handleSaveEvaluation = async () => {
+    try {
+      console.log('Item ID details:', {
+        id: evaluationState.itemId,
+        type: typeof evaluationState.itemId,
+        length: evaluationState.itemId?.length,
+        value: evaluationState.itemId
+      });
+
+      const response = await axios.put(`http://localhost:5001/api/items/${evaluationState.itemId}/evaluate`, {
+        type: evaluationState.type,
+        note: evaluationState.note
+      });
+
+      if (response.data.success) {
+        setItems(prevItems => 
+          prevItems.map(item => 
+            item._id === evaluationState.itemId 
+              ? { ...item, evaluated: { type: parseInt(evaluationState.type), note: evaluationState.note } }
+              : item
+          )
+        );
+        setEvaluationState({ itemId: null, type: '', note: '', isOpen: false });
+      }
+    } catch (error) {
+      console.error('Error saving evaluation:', error);
+      console.error('Error response:', error.response?.data);
+      alert('Failed to save evaluation: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  const handleEvaluateClick = (item) => {
+    console.log('Item details:', {
+      _id: item._id,
+      type: typeof item._id,
+      length: item._id?.length
+    });
+    setEvaluationState({
+      itemId: item._id,
+      type: item.evaluated?.type?.toString() || '',
+      note: item.evaluated?.note || '',
+      isOpen: true
+    });
+  };
+
+  const getEvaluationIcon = (type) => {
+    switch (type) {
+      case 1: return '🟢';
+      case 2: return '🟡';
+      case 3: return '🔴';
+      default: return '⚪';
+    }
+  };
+
+  const getEvaluationText = (type) => {
+    switch (type) {
+      case 1: return 'Nên mua';
+      case 2: return 'Thương lượng';
+      case 3: return 'Không mua';
+      default: return 'Chưa xử lý';
+    }
+  };
+
+  const handleBulkEvaluate = async () => {
+    try {
+      const evaluations = JSON.parse(bulkEvaluationState.jsonInput);
+      
+      if (!Array.isArray(evaluations)) {
+        throw new Error('Input must be an array of evaluations');
+      }
+
+      const validEvaluations = evaluations.map(evaluation => {
+        const baseEval = {
+          _id: parseInt(evaluation._id),
+          type: parseInt(evaluation.type),
+          note: evaluation.note || ''
+        };
+
+        // Add additional fields for type 1
+        if (parseInt(evaluation.type) === 1) {
+          if (evaluation.buy_price) baseEval.buy_price = parseInt(evaluation.buy_price);
+          if (evaluation.sell_price) baseEval.sell_price = parseInt(evaluation.sell_price);
+          if (evaluation.new_title) baseEval.new_title = evaluation.new_title;
+        }
+
+        return baseEval;
+      });
+
+      console.log('Sending evaluations to server:', validEvaluations);
+
+      const response = await axios.put('http://localhost:5001/api/items/bulk-evaluate', {
+        evaluations: validEvaluations
+      });
+
+      if (response.data.success) {
+        setItems(prevItems => 
+          prevItems.map(item => {
+            const updatedEval = validEvaluations.find(e => e._id === item._id);
+            if (updatedEval) {
+              return { 
+                ...item, 
+                evaluated: { 
+                  type: updatedEval.type, 
+                  note: updatedEval.note,
+                  ...(updatedEval.type === 1 && {
+                    buy_price: updatedEval.buy_price,
+                    sell_price: updatedEval.sell_price,
+                    new_title: updatedEval.new_title
+                  })
+                } 
+              };
+            }
+            return item;
+          })
+        );
+        
+        setBulkEvaluationState({
+          isOpen: false,
+          jsonInput: '',
+          error: null
+        });
+        
+        alert('Bulk evaluation completed successfully!');
+      }
+    } catch (error) {
+      console.error('Error in bulk evaluation:', error);
+      setBulkEvaluationState(prev => ({
+        ...prev,
+        error: error.message
+      }));
+    }
+  };
+
+  const handlePageChange = (newPage) => {
+    setFilters(prev => ({ ...prev, page: newPage }));
+    setSelectedItems(new Set());
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedItems.size === 0) {
+      alert('Vui lòng chọn ít nhất một sản phẩm để xóa.');
+      return;
+    }
+
+    const confirmed = window.confirm(`Bạn có chắc chắn muốn xóa ${selectedItems.size} sản phẩm đã chọn?`);
+    if (!confirmed) return;
+
+    try {
+      const response = await axios.delete('http://localhost:5001/api/items', {
+        data: { itemIds: Array.from(selectedItems) }
+      });
+
+      if (response.data.success) {
+        // Remove deleted items from the UI
+        setItems(prevItems => prevItems.filter(item => !selectedItems.has(item._id)));
+        // Clear selection
+        setSelectedItems(new Set());
+        alert(`Đã xóa thành công ${response.data.deletedCount} sản phẩm.`);
+      }
+    } catch (error) {
+      console.error('Error deleting items:', error);
+      alert('Đã xảy ra lỗi khi xóa sản phẩm: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  const handleDeleteByType = async (type) => {
+    const typeText = type === 2 ? 'Thương lượng' : 'Không mua';
+    const confirmed = window.confirm(`Bạn có chắc chắn muốn xóa TẤT CẢ sản phẩm có trạng thái "${typeText}"?`);
+    if (!confirmed) return;
+
+    try {
+      const response = await axios.delete(`http://localhost:5001/api/items/by-type/${type}`);
+
+      if (response.data.success) {
+        // Remove deleted items from the UI
+        setItems(prevItems => prevItems.filter(item => !(item.evaluated?.type === type)));
+        // Clear selection
+        setSelectedItems(new Set());
+        alert(`Đã xóa thành công ${response.data.deletedCount} sản phẩm có trạng thái "${typeText}".`);
+        
+        // Fetch items again to update the list correctly
+        fetchItems();
+      }
+    } catch (error) {
+      console.error(`Error deleting items with type ${type}:`, error);
+      alert('Đã xảy ra lỗi khi xóa sản phẩm: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  return (
+    <div className="item-list-container">
+      <div className="filters">
+        <div className="filter-group sort-group">
+          <select name="sortBy" value={filters.sortBy} onChange={handleSortChange} className="sort-filter">
+            <option value="newest">Tin mới trước</option>
+            <option value="price-high">Giá cao trước</option>
+            <option value="price-low">Giá thấp trước</option>
+            <option value="roi-high">ROI cao trước</option>
+          </select>
+        </div>
+
+        <div className="id-search-container">
+          <input
+            type="text"
+            name="itemIds"
+            placeholder="Tìm theo ID (123, 456...)"
+            value={filters.itemIds}
+            onChange={(e) => handleFilterChange('itemIds', e.target.value)}
+            className="id-search-input"
+          />
+          <button 
+            className="reset-filters-btn" 
+            onClick={() => setFilters({
+              category: '',
+              province: '',
+              minPrice: '',
+              maxPrice: '',
+              sortBy: 'newest',
+              evaluatedType: '',
+              page: 1,
+              itemIds: '',
+            })}
+            title="Xóa bộ lọc"
+          >
+            ↺
+          </button>
+        </div>
+
+        <div className="filter-group">
+          <FilterDropdown
+            label="Danh mục"
+            options={{ '': 'Tất cả danh mục', ...CATEGORIES }}
+            selectedOptions={filters.category}
+            onChange={(value) => handleFilterChange('category', value)}
+            placeholder="Chọn danh mục"
+            isMultiSelect={false}
+          />
+        </div>
+
+        <div className="filter-group">
+          <FilterDropdown
+            label="Tỉnh/Thành phố"
+            options={{ '': 'Toàn quốc', ...PROVINCES }}
+            selectedOptions={filters.province}
+            onChange={(value) => handleFilterChange('province', value)}
+            placeholder="Chọn tỉnh/thành"
+            isMultiSelect={false}
+          />
+        </div>
+
+        <div className="filter-group">
+          <FilterDropdown
+            label="Trạng thái"
+            options={{ '': 'Tất cả trạng thái', ...EVALUATED_TYPES }}
+            selectedOptions={filters.evaluatedType}
+            onChange={(value) => handleFilterChange('evaluatedType', value)}
+            placeholder="Chọn trạng thái"
+            isMultiSelect={false}
+          />
+        </div>
+
+        <input
+          type="text"
+          name="minPrice"
+          placeholder="Giá thấp nhất"
+          value={formatInputPrice(filters.minPrice)}
+          onChange={handlePriceInputChange}
+        />
+        <input
+          type="text"
+          name="maxPrice"
+          placeholder="Giá cao nhất"
+          value={formatInputPrice(filters.maxPrice)}
+          onChange={handlePriceInputChange}
+        />
+
+        <button 
+          className="bulk-evaluate-btn"
+          onClick={() => setBulkEvaluationState(prev => ({ ...prev, isOpen: true }))}
+        >
+          Insert Eval
+        </button>
+
+        <div className="type-delete-buttons">
+          <button 
+            className="delete-type-btn type-2"
+            onClick={() => handleDeleteByType(2)}
+            title="Xóa tất cả sản phẩm có trạng thái Thương lượng"
+          >
+            Xóa 🟡
+          </button>
+          <button 
+            className="delete-type-btn type-3"
+            onClick={() => handleDeleteByType(3)}
+            title="Xóa tất cả sản phẩm có trạng thái Không mua"
+          >
+            Xóa 🔴
+          </button>
+        </div>
+      </div>
+
+      <div className="header">
+        <div className="select-all">
+          <input
+            type="checkbox"
+            onChange={handleSelectAll}
+            checked={selectedItems.size === items.length && items.length > 0}
+          />
+          <span>Chọn tất cả</span>
+        </div>
+        <div className="header-buttons">
+          <button onClick={handleGetPrompt} className="get-prompt-btn">
+            Get Prompt
+          </button>
+          <button onClick={handleDeleteSelected} className="delete-selected-btn">
+            Xóa
+          </button>
+        </div>
+      </div>
+
+      <Pagination
+        currentPage={pagination.currentPage}
+        totalPages={pagination.totalPages}
+        onPageChange={handlePageChange}
+      />
+
+      <ul className="item-list">
+        {items.map(item => (
+          <li key={item._id} className="item-card">
+            <div className="item-content">
+              <div className="top-right-controls">
+                <div className="evaluation-display">
+                  <div 
+                    className="evaluation-icon"
+                    title={item.evaluated?.type ? 
+                      `${item.evaluated.note}${item.evaluated.type === 1 ? 
+                        `\nBuy: ${formatPrice(item.evaluated.buy_price || 0)}` +
+                        `\nSell: ${formatPrice(item.evaluated.sell_price || 0)}` +
+                        `\nROI: ${(((item.evaluated.sell_price || 0) - (item.evaluated.buy_price || 0)) / (item.evaluated.buy_price || 1) * 100).toFixed(1)}%` : 
+                        ''}`
+                      : ''}
+                  >
+                    {getEvaluationIcon(item.evaluated?.type || 0)}
+                  </div>
+                  <div 
+                    className="evaluation-text"
+                    onClick={() => setEvaluationState({
+                      itemId: item._id,
+                      type: item.evaluated?.type?.toString() || '',
+                      note: item.evaluated?.note || '',
+                      isOpen: true
+                    })}
+                  >
+                    {getEvaluationText(item.evaluated?.type || 0)}
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  className="item-checkbox"
+                  checked={selectedItems.has(item._id)}
+                  onChange={() => handleCheckboxChange(item._id)}
+                />
+              </div>
+              
+              <a href={item.item_url} target="_blank" rel="noopener noreferrer" className="item-image-link">
+                <div className="item-image">
+                  <img src={item.item_images[0]} alt={item.title} />
+                </div>
+              </a>
+              
+              <div className="item-details">
+                <h3>{item.title}</h3>
+                <p className="id">{item._id}</p>
+                <p className="price">{formatPrice(item.price_num)}</p>
+                <p className="location">{item.location.full_location}</p>
+                <p className="description">{item.short_des}</p>
+                <div className="specs">
+                  {renderSpecs(item)}
+                </div>
+                <div className="user-info">
+                  <img src={item.user_image} alt={item.user_name} className="user-avatar" />
+                  <span>{item.user_name}</span>
+                </div>
+              </div>
+            </div>
+            <span className="update-time">{item.update_time}</span>
+          </li>
+        ))}
+      </ul>
+
+      {bulkEvaluationState.isOpen && (
+        <div className="bulk-evaluation-modal">
+          <div className="bulk-evaluation-content">
+            <h3>Bulk Insert Evaluations</h3>
+            <textarea
+              className="bulk-evaluation-input"
+              value={bulkEvaluationState.jsonInput}
+              onChange={(e) => setBulkEvaluationState(prev => ({ 
+                ...prev, 
+                jsonInput: e.target.value,
+                error: null 
+              }))}
+              placeholder={`
+```
+</file>
+
+<rewritten_file>
+```
+import React, { useState, useEffect } from 'react'; // Removed useMemo
+import axios from 'axios';
+import FilterDropdown from './FilterDropdown'; // Import the new component
+import Pagination from './Pagination';
+import '../styles/ItemList.css';
+
+const CATEGORIES = {
+  'dien-thoai': 'Điện thoại',
+  'laptop': 'Laptop',
+  'may-tinh-bang': 'Máy tính bảng',
+  'may-anh-may-quay': 'Máy ảnh, Máy quay',
+  'phu-kien': 'Phụ kiện (Màn hình, Chuột...)',
+  'may-tinh-de-ban': 'Máy tính để bàn',
+  'thiet-bi-deo-thong-minh': 'Thiết bị đeo thông minh'
+};
+
+const PROVINCES = {
+  'tp-ho-chi-minh': 'TP Hồ Chí Minh',
+  'ha-noi': 'Hà Nội',
+  'binh-duong': 'Bình Dương',
+  'dong-nai': 'Đồng Nai',
+  'ba-ria-vung-tau': 'Bà Rịa - Vũng Tàu',
+  'hai-phong': 'Hải Phòng',
+  'quang-ninh': 'Quảng Ninh',
+  'bac-ninh': 'Bắc Ninh',
+  'thanh-hoa': 'Thanh Hóa',
+  'hai-duong': 'Hải Dương',
+  'long-an': 'Long An',
+  'bac-giang': 'Bắc Giang',
+  'vinh-phuc': 'Vĩnh Phúc',
+  'da-nang': 'Đà Nẵng',
+  'can-tho': 'Cần Thơ',
+  'thai-nguyen': 'Thái Nguyên',
+  'hung-yen': 'Hưng Yên',
+  'khanh-hoa': 'Khánh Hòa',
+  'nghe-an': 'Nghệ An',
+  'kien-giang': 'Kiên Giang',
+  'tien-giang': 'Tiền Giang',
+  'lam-dong': 'Lâm Đồng',
+  'dak-lak': 'Đắk Lắk',
+  'quang-ngai': 'Quảng Ngãi',
+  'binh-dinh': 'Bình Định',
+  'quang-nam': 'Quảng Nam',
+  'an-giang': 'An Giang',
+  'dong-thap': 'Đồng Tháp',
+  'tay-ninh': 'Tây Ninh',
+  'binh-thuan': 'Bình Thuận',
+  'binh-phuoc': 'Bình Phước',
+  'nam-dinh': 'Nam Định',
+  'ha-tinh': 'Hà Tĩnh',
+  'gia-lai': 'Gia Lai',
+  'phu-tho': 'Phú Thọ',
+  'ninh-binh': 'Ninh Bình',
+  'tra-vinh': 'Trà Vinh',
+  'ca-mau': 'Cà Mau',
+  'vinh-long': 'Vĩnh Long',
+  'soc-trang': 'Sóc Trăng',
+  'thua-thien-hue': 'Thừa Thiên Huế',
+  'lao-cai': 'Lào Cai',
+  'ben-tre': 'Bến Tre',
+  'thai-binh': 'Thái Bình',
+  'hau-giang': 'Hậu Giang',
+  'bac-lieu': 'Bạc Liêu',
+  'hoa-binh': 'Hòa Bình',
+  'phu-yen': 'Phú Yên',
+  'quang-binh': 'Quảng Bình',
+  'ninh-thuan': 'Ninh Thuận',
+  'ha-nam': 'Hà Nam',
+  'son-la': 'Sơn La',
+  'dak-nong': 'Đắk Nông',
+  'quang-tri': 'Quảng Trị',
+  'tuyen-quang': 'Tuyên Quang',
+  'lang-son': 'Lạng Sơn',
+  'yen-bai': 'Yên Bái',
+  'kon-tum': 'Kon Tum',
+  'ha-giang': 'Hà Giang',
+  'dien-bien': 'Điện Biên',
+  'lai-chau': 'Lai Châu',
+  'cao-bang': 'Cao Bằng',
+  'bac-kan': 'Bắc Kạn'
+}
+
+const EVALUATED_TYPES = {
+  '0': '⚪ Chưa xử lý', // None
+  '1': '🟢 Nên mua',    // Should Buy
+  '2': '🟡 Thương lượng', // Negotiable
+  '3': '🔴 Không mua'   // Don't Buy
+};
+
+const ItemList = () => {
+  const [items, setItems] = useState([]);
+  const [selectedItems, setSelectedItems] = useState(new Set());
+  const [filters, setFilters] = useState({
+    category: '',
+    province: '',
+    minPrice: '',
+    maxPrice: '',
+    sortBy: 'newest',
+    evaluatedType: '',
+    page: 1,
+    itemIds: '',
+  });
+  const [pagination, setPagination] = useState({
+    total: 0,
+    totalPages: 0,
+    currentPage: 1,
+    limit: 10
+  });
+  const [evaluationState, setEvaluationState] = useState({
+    itemId: null,
+    type: '',
+    note: '',
+    isOpen: false
+  });
+  const [bulkEvaluationState, setBulkEvaluationState] = useState({
+    isOpen: false,
+    jsonInput: '',
+    error: null
+  });
+
+  // Convert Vietnamese time string to timestamp
+  const getTimeInMilliseconds = (timeString) => {
+    const now = new Date();
+    const number = parseInt(timeString.split(' ')[0]);
+    const unit = timeString.split(' ')[1];
+
+    switch (unit) {
+      case 'phút':
+      case 'phút trước':
+        return now.getTime() - (number * 60 * 1000);
+      case 'giờ':
+      case 'giờ trước':
+        return now.getTime() - (number * 60 * 60 * 1000);
+      case 'ngày':
+      case 'ngày trước':
+        return now.getTime() - (number * 24 * 60 * 60 * 1000);
+      case 'tuần':
+      case 'tuần trước':
+        return now.getTime() - (number * 7 * 24 * 60 * 60 * 1000);
+      case 'tháng':
+      case 'tháng trước':
+        return now.getTime() - (number * 30 * 24 * 60 * 60 * 1000);
+      case 'năm':
+      case 'năm trước':
+        return now.getTime() - (number * 365 * 24 * 60 * 60 * 1000);
+      default:
+        return now.getTime();
+    }
+  };
+
+  useEffect(() => {
+    fetchItems();
+  }, [filters]);
+
+  const fetchItems = async () => {
+    try {
+      // Create a copy of filters to modify
+      const params = { ...filters };
+      
+      // Process itemIds if they exist
+      if (params.itemIds) {
+        // Split by comma, trim whitespace, and filter out empty strings
+        params.itemIds = params.itemIds.split(',')
+          .map(id => id.trim())
+          .filter(id => id !== '')
+          .join(',');
+      }
+      
+      // Remove empty filters
+      Object.keys(params).forEach(key => {
+        if (params[key] === '') {
+          delete params[key];
+        }
+      });
+      
+      const response = await axios.get('http://localhost:5001/api/items', { params });
+      
+      let sortedItems = [...response.data.items];
+      
+      // Sort items based on selected option - only time-based sorting needs client-side handling
+      if (filters.sortBy === 'newest') {
+        sortedItems.sort((a, b) => {
+          const timeA = getTimeInMilliseconds(a.update_time);
+          const timeB = getTimeInMilliseconds(b.update_time);
+          return timeB - timeA;
+        });
+      }
+      // All other sorting (price-high, price-low, roi-high) is handled by the server
+      
+      setItems(sortedItems);
+      setPagination(response.data.pagination);
+    } catch (error) {
+      console.error('Error fetching items:', error);
+    }
+  };
+
+  const handleCheckboxChange = (itemId) => {
+    const newSelected = new Set(selectedItems);
+    if (newSelected.has(itemId)) {
+      newSelected.delete(itemId);
+    } else {
+      newSelected.add(itemId);
+    }
+    setSelectedItems(newSelected);
+  };
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedItems(new Set(items.map(item => item._id)));
+    } else {
+      setSelectedItems(new Set());
+    }
+  };
+
+  const handleFilterChange = (name, value) => {
+    setFilters(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSortChange = (e) => {
+      const { name, value } = e.target;
+      setFilters(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleGetPrompt = () => {
+    const selectedItemsData = items.filter(item => selectedItems.has(item._id));
+
+    if (selectedItemsData.length === 0) {
+        alert('Vui lòng chọn ít nhất một sản phẩm để tạo prompt.');
+        return;
+    }
+
+    // --- Phần Hướng dẫn Đầu (Giữ nguyên) ---
+    const promptIntro = `Bạn là một chuyên gia mua bán sản phẩm công nghệ cũ tại Việt Nam. Nhiệm vụ của bạn là đánh giá các sản phẩm được rao bán dưới đây để quyết định xem có nên mua hay không, dựa trên khả năng bán lại nhanh chóng và lợi nhuận tiềm năng.
+    Tham khảo giá thu củ đổi mới tại các cửa hàng công nghệ fpt, thegioididong, https://cellphones.com.vn/thu-cu-doi-moi, các cửa hàng tại việt nam, hãy tham khảo trên internet thông tin chính xác nhất. hãy đánh giá như 1 người thợ thầy, trả giá mua thấp hơn các cửa hàng, vậy thì mới cạnh tranh giá bán lại được.
+
+Hãy thực hiện các bước sau để đánh giá từng sản phẩm:
+
+1.  Phân tích thông tin chi tiết của sản phẩm để xác định giá trị thực của nó.
+2.  Đánh giá tình trạng thị trường hiện tại cho dòng sản phẩm này tại Việt Nam.
+3.  Xác định xem sản phẩm có thể bán lại nhanh chóng hay không (mục tiêu là bán nhanh).
+4.  Ước tính lợi nhuận tiềm năng nếu mua sản phẩm với giá rao bán hiện tại.`;
+
+
+    // --- Phần Hướng dẫn Cuối & Định dạng (Giữ nguyên) ---
+    const promptConclusion = `Hãy nghiên cứu thị trường cho từng dòng máy, nếu thu lại có bán nhanh được không, biên độ lãi là bao nhiêu. Thời gian bán lại phải nhanh.
+
+Vui lòng cung cấp đánh giá cho TẤT CẢ các sản phẩm đã liệt kê ở trên theo định dạng JSON array chính xác như sau:
+\`\`\`json
+[
+  {
+    "_id": "item_id_cua_san_pham_1", // ID sản phẩm dạng string
+    "type": 1, // 1: Nên mua, 2: Thương lượng, 3: Không mua
+    "buy_price": 1000000, // Giá mua đề xuất (VND) - phải thấp hơn giá thị trường ít nhất 15-20% để đảm bảo lợi nhuận, thấp hơn giá các cửa hàng, thợ, nhưng vẫn hợp lý để thương lượng.
+    "sell_price": 1200000, // Giá bán dự kiến (VND) - giá bán ra rẻ hơn thị trường 5-10%, đảm bảo lợi nhuận tối thiểu 15-20%, và phải bán được trong vòng 1-2 tuần. 
+    "new_title": "iPhone 11 Pro 64GB Xám - Pin 90% - Bảo hành 3 tháng", // Tiêu đề đã tối ưu SEO với đầy đủ thông tin quan trọng
+    "note": "Phân tích chi tiết: [Phân tích thị trường chi tiết] ngắn gọn. Tình trạng: [Đánh giá cụ thể về tình trạng sản phẩm]. Hãy chọn những sản phẩm, RẤT NÊN MUA, KÈO THƠM trong note Giá thị trường hiện tại từ [X] đến [Y]. Lợi nhuận dự kiến: [Z]%. Tin nhắn đề xuất: \"Em đang tìm máy để dùng cá nhân, em thấy máy anh/chị còn đẹp, em có thể mua với giá [giá cụ thể (dựa vào buy price)] được không ạ?\", thật súc tích, ngắn gọn.",
+  },
+
+  // Chỉ có type 1 cần thêm nhiều filed thông tin, Nếu type 2, 3 chỉ cần type và note, nêu lý do cần thương lượng và giá/điều kiện đề xuất với người bán. Nếu type 3, nêu lý do không mua ngắn gọn.  
+
+  {
+    "_id": "item_id_cua_san_pham_2", // ID sản phẩm dạng string
+    "type": 2, 
+    "note": "Ví dụ: Giá rao hơi cao so với thị trường, cần thương lượng giảm X đồng." 
+  },
+  {
+    "_id": "item_id_cua_san_pham_3", // ID sản phẩm dạng string
+    "type": 3, 
+    "note": "Giá rao quá cao." 
+  }
+  // ... thêm các object cho các sản phẩm khác đã được cung cấp
+]
+\`\`\`
+
+Lưu ý quan trọng:
+Đối với các sản phẩm được đánh giá là "type: 1" (Nên mua), phảiCỰC KỲ KỸ LƯỠNG trước khi lựa chọn, nhớ nha phải thật cân nhắc, những sản phẩm RẤT NÊN MUA, KÈO THƠM thì mới chọn:
+- Nghiên cứu thị trường kỹ lưỡng: Xác định chính xác nhu cầu thực tế cho dòng sản phẩm này tại Việt Nam. Phân tích xu hướng tiêu dùng hiện tại, mức độ phổ biến của model này. So sánh với các model mới hơn để đánh giá khả năng lỗi thời.
+- Đánh giá tình trạng: Phân tích chi tiết dựa vào mô tả và hình ảnh. Đặc biệt chú ý đến tình trạng màn hình, pin, các vết trầy xước, dấu hiệu sửa chữa, thay thế linh kiện. Đánh giá mức độ ảnh hưởng của các khiếm khuyết đến giá trị và khả năng bán lại.
+- Định giá mua (buy_price): Phải tính toán cực kỹ để đảm bảo lợi nhuận. Tham khảo giá thu cũ của các cửa hàng lớn và giá thực tế đang giao dịch trên thị trường. Phải thấp hơn đáng kể so với giá thị trường nhưng vẫn hợp lý đối với người bán. Chênh lệch giữa giá mua và giá bán dự kiến phải có biên lợi nhuận tối thiểu 15-20% sau khi trừ các chi phí (vận chuyển, kiểm tra, bảo quản).
+- Định giá bán (sell_price): Phải thấp hơn ít nhất 5-10% so với giá thị trường của sản phẩm tương tự để đảm bảo bán nhanh, không thấp hơn giá của người bán đề xuất, tại vì thấp hơn thì người bán tự bán chứ bán cho mình làm gì, nhưng vẫn đủ cao để có lợi nhuận. Cân nhắc kỹ yếu tố cạnh tranh và tốc độ bán hàng.
+- Nghĩa là buy_price thấp hơn Giá Được Người Dùng Rao Bán, Giá Được Người Dùng Rao Bán lại thấp hơn sell_price. 
+- Tốc độ bán lại: Phải đánh giá chính xác khả năng bán trong vòng 1-2 tuần. Các sản phẩm mất hơn 2 tuần để bán sẽ ảnh hưởng đến dòng tiền và tỷ suất lợi nhuận thực tế. Chỉ chọn những sản phẩm có khả năng bán nhanh cao.
+- Phân tích rủi ro: Đánh giá toàn diện các rủi ro như sản phẩm có thể có lỗi tiềm ẩn, khả năng giảm giá đột ngột (do ra mắt model mới), chi phí sửa chữa nếu phát hiện vấn đề sau khi mua. Chỉ chọn mua khi rủi ro thấp.
+- Tối ưu tin đăng: "new_title" phải được tối ưu SEO, nêu bật những đặc điểm quan trọng nhất của sản phẩm (model, dung lượng, màu sắc, tình trạng pin, bảo hành) để thu hút người mua tiềm năng khi đăng bán lại.
+- Cân nhắc tính thanh khoản dài hạn: Đánh giá khả năng duy trì giá trị của sản phẩm trong 1-2 tháng tới nếu không bán được ngay. Tránh các sản phẩm có nguy cơ mất giá nhanh.
+  
+- Dựa vào các thông tin như description, ưu tiên mua của người bán không rành giá hoặc cần tiền gấp, dựa vào tiêu đề thông tin chi tiết, xem xét câu từ, icon (thường người bán chuyên sẽ viết des có icon, sử dụng từ chuyên ngành), ... để xem người bán có phải thợ, chuyên nghiệp, tránh những người này vì mua sẽ không có lời.
+- Đảm bảo trả về một JSON array hợp lệ chứa đối tượng đánh giá cho TẤT CẢ các sản phẩm được cung cấp ở trên.
+- Các sản phẩm là độc lập, đánh giá riêng lẻ từng cái.
+- ID sản phẩm trong JSON phải là kiểu string.
+- KHÔNG BAO GIỜ mua các sản phẩm quá cũ (thường là 3-4 năm trở lên), quá lỗi thời, hoặc có dấu hiệu hư hỏng.
+- Trả giá mua thấp hơn các cửa hàng 15-20% để đảm bảo lợi nhuận. Yêu cầu tuyệt đối: sản phẩm phải bán lại được trong vòng 1-2 tuần.
+- Phân tích chi tiết lý do với các sản phẩm type 1, đặc biệt là phân tích thị trường, tình trạng sản phẩm, lợi nhuận dự kiến và thời gian bán ước tính.
+`;
+
+    // --- Tạo chuỗi thông tin động cho từng sản phẩm ---
+    const itemDataStrings = selectedItemsData.map((item, index) => {
+        // Hàm helper (giữ nguyên)
+        const getSafe = (obj, path, defaultValue = null) => { // Thay đổi defaultValue thành null để dễ kiểm tra hơn
+            const keys = Array.isArray(path) ? path : path.replace(/\[(\w+)\]/g, '.$1').replace(/^\./, '').split('.');
+            let result = obj;
+            for (const key of keys) {
+                if (result === null || typeof result !== 'object') return defaultValue;
+                result = result[key];
+                if (result === undefined) return defaultValue;
+            }
+            return result; // Trả về giá trị tìm được hoặc null
+        };
+
+        // --- Bắt đầu xây dựng chuỗi cho sản phẩm này ---
+        let detailsString = `--- Thông tin Sản phẩm ${index + 1} ---\n`;
+
+        // 1. Thêm các thông tin cố định, quan trọng
+        const id = getSafe(item, '_id');
+        if (id !== null) detailsString += `- ID Sản Phẩm: "${id}"\n`; // Đảm bảo ID là string
+
+        const categoryKey = getSafe(item, 'item_category');
+        const categoryDisplay = categoryKey ? (CATEGORIES[categoryKey] || categoryKey) : null;
+        if (categoryDisplay) detailsString += `- Loại Sản Phẩm: ${categoryDisplay}\n`;
+
+        const title = getSafe(item, 'title');
+        if (title) detailsString += `- Tiêu Đề: ${title}\n`;
+
+        const price = getSafe(item, 'price_str');
+        if (price) detailsString += `- Giá Được Người Dùng Rao Bán: ${price}\n`;
+
+        const updateTime = getSafe(item, 'update_time');
+        if (updateTime) detailsString += `- Thời Gian Đăng: ${updateTime}\n`;
+
+        const location = getSafe(item, 'location.full_location');
+        if (location) detailsString += `- Địa Điểm: ${location}\n`;
+
+        // 2. Thêm TOÀN BỘ thong_tin_chi_tiet dưới dạng JSON string được định dạng
+        const thongTinChiTietObj = getSafe(item, 'thong_tin_chi_tiet');
+        if (typeof thongTinChiTietObj === 'object' && thongTinChiTietObj !== null && Object.keys(thongTinChiTietObj).length > 0) {
+             detailsString += `- Thông Tin Chi Tiết Khác:\n`;
+             // Sử dụng JSON.stringify để chuyển đổi cả object thành chuỗi JSON
+             // Tham số thứ 3 (số 2) để tạo thụt lề, giúp dễ đọc hơn
+             detailsString += JSON.stringify(thongTinChiTietObj, null, 2);
+        } else {
+             // Có thể bỏ qua nếu không có thông tin chi tiết
+             // detailsString += `- Thông Tin Chi Tiết Khác: Không có\n`;
+        }
+
+
+        // 3. Thêm mô tả của người bán (quan trọng)
+        const description = getSafe(item, 'detailed_description');
+        if (description) {
+            detailsString += `- Mô Tả Người Bán: ${description.replace(/\n+/g, ' ')}\n`; // Thay nhiều newline bằng 1 space
+        }
+
+        return detailsString.trim(); // Loại bỏ khoảng trắng thừa
+
+    }).join('\n\n'); // Ngăn cách các sản phẩm bằng dòng trống
+
+
+    // --- Kết hợp các phần để tạo prompt cuối cùng ---
+    const finalPrompt = `${promptIntro}
+
+Hãy đánh giá các sản phẩm có thông tin chi tiết như sau:
+
+${itemDataStrings}
+
+${promptConclusion}`;
+
+    // Sao chép vào clipboard và thông báo
+    navigator.clipboard.writeText(finalPrompt);
+    alert(`Prompt đã được tạo và sao chép cho ${selectedItemsData.length} sản phẩm!`);
+};
+
+  const formatInputPrice = (value) => {
+    if (!value) return '';
+    return new Intl.NumberFormat('vi-VN').format(value);
+  };
+
+  const handlePriceInputChange = (e) => {
+    const { name, value } = e.target;
+    const numericValue = value.replace(/\D/g, '');
+    setFilters(prev => ({ ...prev, [name]: numericValue }));
+  };
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(price).replace('₫', 'đ');
+  };
+
+  const renderSpecs = (item) => {
+    const specs = [];
+    if (item.thong_tin_chi_tiet) {
+      for (const [key, value] of Object.entries(item.thong_tin_chi_tiet)) {
+        specs.push(
+          <span key={key} className="spec-item">
+            {key}: {value}
+          </span>
+        );
+      }
+    }
+    return specs;
+  };
+
+  const handleSaveEvaluation = async () => {
+    try {
+      console.log('Item ID details:', {
+        id: evaluationState.itemId,
+        type: typeof evaluationState.itemId,
+        length: evaluationState.itemId?.length,
+        value: evaluationState.itemId
+      });
+
+      const response = await axios.put(`http://localhost:5001/api/items/${evaluationState.itemId}/evaluate`, {
+        type: evaluationState.type,
+        note: evaluationState.note
+      });
+
+      if (response.data.success) {
+        setItems(prevItems => 
+          prevItems.map(item => 
+            item._id === evaluationState.itemId 
+              ? { ...item, evaluated: { type: parseInt(evaluationState.type), note: evaluationState.note } }
+              : item
+          )
+        );
+        setEvaluationState({ itemId: null, type: '', note: '', isOpen: false });
+      }
+    } catch (error) {
+      console.error('Error saving evaluation:', error);
+      console.error('Error response:', error.response?.data);
+      alert('Failed to save evaluation: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  const handleEvaluateClick = (item) => {
+    console.log('Item details:', {
+      _id: item._id,
+      type: typeof item._id,
+      length: item._id?.length
+    });
+    setEvaluationState({
+      itemId: item._id,
+      type: item.evaluated?.type?.toString() || '',
+      note: item.evaluated?.note || '',
+      isOpen: true
+    });
+  };
+
+  const getEvaluationIcon = (type) => {
+    switch (type) {
+      case 1: return '🟢';
+      case 2: return '🟡';
+      case 3: return '🔴';
+      default: return '⚪';
+    }
+  };
+
+  const getEvaluationText = (type) => {
+    switch (type) {
+      case 1: return 'Nên mua';
+      case 2: return 'Thương lượng';
+      case 3: return 'Không mua';
+      default: return 'Chưa xử lý';
+    }
+  };
+
+  const handleBulkEvaluate = async () => {
+    try {
+      const evaluations = JSON.parse(bulkEvaluationState.jsonInput);
+      
+      if (!Array.isArray(evaluations)) {
+        throw new Error('Input must be an array of evaluations');
+      }
+
+      const validEvaluations = evaluations.map(evaluation => {
+        const baseEval = {
+          _id: parseInt(evaluation._id),
+          type: parseInt(evaluation.type),
+          note: evaluation.note || ''
+        };
+
+        // Add additional fields for type 1
+        if (parseInt(evaluation.type) === 1) {
+          if (evaluation.buy_price) baseEval.buy_price = parseInt(evaluation.buy_price);
+          if (evaluation.sell_price) baseEval.sell_price = parseInt(evaluation.sell_price);
+          if (evaluation.new_title) baseEval.new_title = evaluation.new_title;
+        }
+
+        return baseEval;
+      });
+
+      console.log('Sending evaluations to server:', validEvaluations);
+
+      const response = await axios.put('http://localhost:5001/api/items/bulk-evaluate', {
+        evaluations: validEvaluations
+      });
+
+      if (response.data.success) {
+        setItems(prevItems => 
+          prevItems.map(item => {
+            const updatedEval = validEvaluations.find(e => e._id === item._id);
+            if (updatedEval) {
+              return { 
+                ...item, 
+                evaluated: { 
+                  type: updatedEval.type, 
+                  note: updatedEval.note,
+                  ...(updatedEval.type === 1 && {
+                    buy_price: updatedEval.buy_price,
+                    sell_price: updatedEval.sell_price,
+                    new_title: updatedEval.new_title
+                  })
+                } 
+              };
+            }
+            return item;
+          })
+        );
+        
+        setBulkEvaluationState({
+          isOpen: false,
+          jsonInput: '',
+          error: null
+        });
+        
+        alert('Bulk evaluation completed successfully!');
+      }
+    } catch (error) {
+      console.error('Error in bulk evaluation:', error);
+      setBulkEvaluationState(prev => ({
+        ...prev,
+        error: error.message
+      }));
+    }
+  };
+
+  const handlePageChange = (newPage) => {
+    setFilters(prev => ({ ...prev, page: newPage }));
+    setSelectedItems(new Set());
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedItems.size === 0) {
+      alert('Vui lòng chọn ít nhất một sản phẩm để xóa.');
+      return;
+    }
+
+    const confirmed = window.confirm(`Bạn có chắc chắn muốn xóa ${selectedItems.size} sản phẩm đã chọn?`);
+    if (!confirmed) return;
+
+    try {
+      const response = await axios.delete('http://localhost:5001/api/items', {
+        data: { itemIds: Array.from(selectedItems) }
+      });
+
+      if (response.data.success) {
+        // Remove deleted items from the UI
+        setItems(prevItems => prevItems.filter(item => !selectedItems.has(item._id)));
+        // Clear selection
+        setSelectedItems(new Set());
+        alert(`Đã xóa thành công ${response.data.deletedCount} sản phẩm.`);
+      }
+    } catch (error) {
+      console.error('Error deleting items:', error);
+      alert('Đã xảy ra lỗi khi xóa sản phẩm: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  const handleDeleteByType = async (type) => {
+    const typeText = type === 2 ? 'Thương lượng' : 'Không mua';
+    const confirmed = window.confirm(`Bạn có chắc chắn muốn xóa TẤT CẢ sản phẩm có trạng thái "${typeText}"?`);
+    if (!confirmed) return;
+
+    try {
+      const response = await axios.delete(`http://localhost:5001/api/items/by-type/${type}`);
+
+      if (response.data.success) {
+        // Remove deleted items from the UI
+        setItems(prevItems => prevItems.filter(item => !(item.evaluated?.type === type)));
+        // Clear selection
+        setSelectedItems(new Set());
+        alert(`Đã xóa thành công ${response.data.deletedCount} sản phẩm có trạng thái "${typeText}".`);
+        
+        // Fetch items again to update the list correctly
+        fetchItems();
+      }
+    } catch (error) {
+      console.error(`Error deleting items with type ${type}:`, error);
+      alert('Đã xảy ra lỗi khi xóa sản phẩm: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  return (
+    <div className="item-list-container">
+      <div className="filters">
+        <div className="filter-group sort-group">
+          <select name="sortBy" value={filters.sortBy} onChange={handleSortChange} className="sort-filter">
+            <option value="newest">Tin mới trước</option>
+            <option value="price-high">Giá cao trước</option>
+            <option value="price-low">Giá thấp trước</option>
+            <option value="roi-high">ROI cao trước</option>
+          </select>
+        </div>
+
+        <div className="id-search-container">
+          <input
+            type="text"
+            name="itemIds"
+            placeholder="Tìm theo ID (123, 456...)"
+            value={filters.itemIds}
+            onChange={(e) => handleFilterChange('itemIds', e.target.value)}
+            className="id-search-input"
+          />
+          <button 
+            className="reset-filters-btn" 
+            onClick={() => setFilters({
+              category: '',
+              province: '',
+              minPrice: '',
+              maxPrice: '',
+              sortBy: 'newest',
+              evaluatedType: '',
+              page: 1,
+              itemIds: '',
+            })}
+            title="Xóa bộ lọc"
+          >
+            ↺
+          </button>
+        </div>
+
+        <div className="filter-group">
+          <FilterDropdown
+            label="Danh mục"
+            options={{ '': 'Tất cả danh mục', ...CATEGORIES }}
+            selectedOptions={filters.category}
+            onChange={(value) => handleFilterChange('category', value)}
+            placeholder="Chọn danh mục"
+            isMultiSelect={false}
+          />
+        </div>
+
+        <div className="filter-group">
+          <FilterDropdown
+            label="Tỉnh/Thành phố"
+            options={{ '': 'Toàn quốc', ...PROVINCES }}
+            selectedOptions={filters.province}
+            onChange={(value) => handleFilterChange('province', value)}
+            placeholder="Chọn tỉnh/thành"
+            isMultiSelect={false}
+          />
+        </div>
+
+        <div className="filter-group">
+          <FilterDropdown
+            label="Trạng thái"
+            options={{ '': 'Tất cả trạng thái', ...EVALUATED_TYPES }}
+            selectedOptions={filters.evaluatedType}
+            onChange={(value) => handleFilterChange('evaluatedType', value)}
+            placeholder="Chọn trạng thái"
+            isMultiSelect={false}
+          />
+        </div>
+
+        <input
+          type="text"
+          name="minPrice"
+          placeholder="Giá thấp nhất"
+          value={formatInputPrice(filters.minPrice)}
+          onChange={handlePriceInputChange}
+        />
+        <input
+          type="text"
+          name="maxPrice"
+          placeholder="Giá cao nhất"
+          value={formatInputPrice(filters.maxPrice)}
+          onChange={handlePriceInputChange}
+        />
+
+        <button 
+          className="bulk-evaluate-btn"
+          onClick={() => setBulkEvaluationState(prev => ({ ...prev, isOpen: true }))}
+        >
+          Insert Eval
+        </button>
+
+        <div className="type-delete-buttons">
+          <button 
+            className="delete-type-btn type-2"
+            onClick={() => handleDeleteByType(2)}
+            title="Xóa tất cả sản phẩm có trạng thái Thương lượng"
+          >
+            Xóa 🟡
+          </button>
+          <button 
+            className="delete-type-btn type-3"
+            onClick={() => handleDeleteByType(3)}
+            title="Xóa tất cả sản phẩm có trạng thái Không mua"
+          >
+            Xóa 🔴
+          </button>
+        </div>
+      </div>
+
+      <div className="header">
+        <div className="select-all">
+          <input
+            type="checkbox"
+            onChange={handleSelectAll}
+            checked={selectedItems.size === items.length && items.length > 0}
+          />
+          <span>Chọn tất cả</span>
+        </div>
+        <div className="header-buttons">
+          <button onClick={handleGetPrompt} className="get-prompt-btn">
+            Get Prompt
+          </button>
+          <button onClick={handleDeleteSelected} className="delete-selected-btn">
+            Xóa
+          </button>
+        </div>
+      </div>
+
+      <Pagination
+        currentPage={pagination.currentPage}
+        totalPages={pagination.totalPages}
+        onPageChange={handlePageChange}
+      />
+
+      <ul className="item-list">
+        {items.map(item => (
+          <li key={item._id} className="item-card">
+            <div className="item-content">
+              <div className="top-right-controls">
+                <div className="evaluation-display">
+                  <div 
+                    className="evaluation-icon"
+                    title={item.evaluated?.type ? 
+                      `${item.evaluated.note}${item.evaluated.type === 1 ? 
+                        `\nBuy: ${formatPrice(item.evaluated.buy_price || 0)}` +
+                        `\nSell: ${formatPrice(item.evaluated.sell_price || 0)}` +
+                        `\nROI: ${(((item.evaluated.sell_price || 0) - (item.evaluated.buy_price || 0)) / (item.evaluated.buy_price || 1) * 100).toFixed(1)}%` : 
+                        ''}`
+                      : ''}
+                  >
+                    {getEvaluationIcon(item.evaluated?.type || 0)}
+                  </div>
+                  <div 
+                    className="evaluation-text"
+                    onClick={() => setEvaluationState({
+                      itemId: item._id,
+                      type: item.evaluated?.type?.toString() || '',
+                      note: item.evaluated?.note || '',
+                      isOpen: true
+                    })}
+                  >
+                    {getEvaluationText(item.evaluated?.type || 0)}
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  className="item-checkbox"
+                  checked={selectedItems.has(item._id)}
+                  onChange={() => handleCheckboxChange(item._id)}
+                />
+              </div>
+              
+              <a href={item.item_url} target="_blank" rel="noopener noreferrer" className="item-image-link">
+                <div className="item-image">
+                  <img src={item.item_images[0]} alt={item.title} />
+                </div>
+              </a>
+              
+              <div className="item-details">
+                <h3>{item.title}</h3>
+                <p className="id">{item._id}</p>
+                <p className="price">{formatPrice(item.price_num)}</p>
+                <p className="location">{item.location.full_location}</p>
+                <p className="description">{item.short_des}</p>
+                <div className="specs">
+                  {renderSpecs(item)}
+                </div>
+                <div className="user-info">
+                  <img src={item.user_image} alt={item.user_name} className="user-avatar" />
+                  <span>{item.user_name}</span>
+                </div>
+              </div>
+            </div>
+            <span className="update-time">{item.update_time}</span>
+          </li>
+        ))}
+      </ul>
+
+      {bulkEvaluationState.isOpen && (
+        <div className="bulk-evaluation-modal">
+          <div className="bulk-evaluation-content">
+            <h3>Bulk Insert Evaluations</h3>
+            <textarea
+              className="bulk-evaluation-input"
+              value={bulkEvaluationState.jsonInput}
+              onChange={(e) => setBulkEvaluationState(prev => ({ 
+                ...prev, 
+                jsonInput: e.target.value,
+                error: null 
+              }))}
+              placeholder={`
+```
+</file>
+
+<rewritten_file>
+```
+import React, { useState, useEffect } from 'react'; // Removed useMemo
+import axios from 'axios';
+import FilterDropdown from './FilterDropdown'; // Import the new component
+import Pagination from './Pagination';
+import '../styles/ItemList.css';
+
+const CATEGORIES = {
+  'dien-thoai': 'Điện thoại',
+  'laptop': 'Laptop',
+  'may-tinh-bang': 'Máy tính bảng',
+  'may-anh-may-quay': 'Máy ảnh, Máy quay',
+  'phu-kien': 'Phụ kiện (Màn hình, Chuột...)',
+  'may-tinh-de-ban': 'Máy tính để bàn',
+  'thiet-bi-deo-thong-minh': 'Thiết bị đeo thông minh'
+};
+
+const PROVINCES = {
+  'tp-ho-chi-minh': 'TP Hồ Chí Minh',
+  'ha-noi': 'Hà Nội',
+  'binh-duong': 'Bình Dương',
+  'dong-nai': 'Đồng Nai',
+  'ba-ria-vung-tau': 'Bà Rịa - Vũng Tàu',
+  'hai-phong': 'Hải Phòng',
+  'quang-ninh': 'Quảng Ninh',
+  'bac-ninh': 'Bắc Ninh',
+  'thanh-hoa': 'Thanh Hóa',
+  'hai-duong': 'Hải Dương',
+  'long-an': 'Long An',
+  'bac-giang': 'Bắc Giang',
+  'vinh-phuc': 'Vĩnh Phúc',
+  'da-nang': 'Đà Nẵng',
+  'can-tho': 'Cần Thơ',
+  'thai-nguyen': 'Thái Nguyên',
+  'hung-yen': 'Hưng Yên',
+  'khanh-hoa': 'Khánh Hòa',
+  'nghe-an': 'Nghệ An',
+  'kien-giang': 'Kiên Giang',
+  'tien-giang': 'Tiền Giang',
+  'lam-dong': 'Lâm Đồng',
+  'dak-lak': 'Đắk Lắk',
+  'quang-ngai': 'Quảng Ngãi',
+  'binh-dinh': 'Bình Định',
+  'quang-nam': 'Quảng Nam',
+  'an-giang': 'An Giang',
+  'dong-thap': 'Đồng Tháp',
+  'tay-ninh': 'Tây Ninh',
+  'binh-thuan': 'Bình Thuận',
+  'binh-phuoc': 'Bình Phước',
+  'nam-dinh': 'Nam Định',
+  'ha-tinh': 'Hà Tĩnh',
+  'gia-lai': 'Gia Lai',
+  'phu-tho': 'Phú Thọ',
+  'ninh-binh': 'Ninh Bình',
+  'tra-vinh': 'Trà Vinh',
+  'ca-mau': 'Cà Mau',
+  'vinh-long': 'Vĩnh Long',
+  'soc-trang': 'Sóc Trăng',
+  'thua-thien-hue': 'Thừa Thiên Huế',
+  'lao-cai': 'Lào Cai',
+  'ben-tre': 'Bến Tre',
+  'thai-binh': 'Thái Bình',
+  'hau-giang': 'Hậu Giang',
+  'bac-lieu': 'Bạc Liêu',
+  'hoa-binh': 'Hòa Bình',
+  'phu-yen': 'Phú Yên',
+  'quang-binh': 'Quảng Bình',
+  'ninh-thuan': 'Ninh Thuận',
+  'ha-nam': 'Hà Nam',
+  'son-la': 'Sơn La',
+  'dak-nong': 'Đắk Nông',
+  'quang-tri': 'Quảng Trị',
+  'tuyen-quang': 'Tuyên Quang',
+  'lang-son': 'Lạng Sơn',
+  'yen-bai': 'Yên Bái',
+  'kon-tum': 'Kon Tum',
+  'ha-giang': 'Hà Giang',
+  'dien-bien': 'Điện Biên',
+  'lai-chau': 'Lai Châu',
+  'cao-bang': 'Cao Bằng',
+  'bac-kan': 'Bắc Kạn'
+}
+
+const EVALUATED_TYPES = {
+  '0': '⚪ Chưa xử lý', // None
+  '1': '🟢 Nên mua',    // Should Buy
+  '2': '🟡 Thương lượng', // Negotiable
+  '3': '🔴 Không mua'   // Don't Buy
+};
+
+const ItemList = () => {
+  const [items, setItems] = useState([]);
+  const [selectedItems, setSelectedItems] = useState(new Set());
+  const [filters, setFilters] = useState({
+    category: '',
+    province: '',
+    minPrice: '',
+    maxPrice: '',
+    sortBy: 'newest',
+    evaluatedType: '',
+    page: 1,
+    itemIds: '',
+  });
+  const [pagination, setPagination] = useState({
+    total: 0,
+    totalPages: 0,
+    currentPage: 1,
+    limit: 10
+  });
+  const [evaluationState, setEvaluationState] = useState({
+    itemId: null,
+    type: '',
+    note: '',
+    isOpen: false
+  });
+  const [bulkEvaluationState, setBulkEvaluationState] = useState({
+    isOpen: false,
+    jsonInput: '',
+    error: null
+  });
+
+  // Convert Vietnamese time string to timestamp
+  const getTimeInMilliseconds = (timeString) => {
+    const now = new Date();
+    const number = parseInt(timeString.split(' ')[0]);
+    const unit = timeString.split(' ')[1];
+
+    switch (unit) {
+      case 'phút':
+      case 'phút trước':
+        return now.getTime() - (number * 60 * 1000);
+      case 'giờ':
+      case 'giờ trước':
+        return now.getTime() - (number * 60 * 60 * 1000);
+      case 'ngày':
+      case 'ngày trước':
+        return now.getTime() - (number * 24 * 60 * 60 * 1000);
+      case 'tuần':
+      case 'tuần trước':
+        return now.getTime() - (number * 7 * 24 * 60 * 60 * 1000);
+      case 'tháng':
+      case 'tháng trước':
+        return now.getTime() - (number * 30 * 24 * 60 * 60 * 1000);
+      case 'năm':
+      case 'năm trước':
+        return now.getTime() - (number * 365 * 24 * 60 * 60 * 1000);
+      default:
+        return now.getTime();
+    }
+  };
+
+  useEffect(() => {
+    fetchItems();
+  }, [filters]);
+
+  const fetchItems = async () => {
+    try {
+      // Create a copy of filters to modify
+      const params = { ...filters };
+      
+      // Process itemIds if they exist
+      if (params.itemIds) {
+        // Split by comma, trim whitespace, and filter out empty strings
+        params.itemIds = params.itemIds.split(',')
+          .map(id => id.trim())
+          .filter(id => id !== '')
+          .join(',');
+      }
+      
+      // Remove empty filters
+      Object.keys(params).forEach(key => {
+        if (params[key] === '') {
+          delete params[key];
+        }
+      });
+      
+      const response = await axios.get('http://localhost:5001/api/items', { params });
+      
+      let sortedItems = [...response.data.items];
+      
+      // Sort items based on selected option - only time-based sorting needs client-side handling
+      if (filters.sortBy === 'newest') {
+        sortedItems.sort((a, b) => {
+          const timeA = getTimeInMilliseconds(a.update_time);
+          const timeB = getTimeInMilliseconds(b.update_time);
+          return timeB - timeA;
+        });
+      }
+      // All other sorting (price-high, price-low, roi-high) is handled by the server
+      
+      setItems(sortedItems);
+      setPagination(response.data.pagination);
+    } catch (error) {
+      console.error('Error fetching items:', error);
+    }
+  };
+
+  const handleCheckboxChange = (itemId) => {
+    const newSelected = new Set(selectedItems);
+    if (newSelected.has(itemId)) {
+      newSelected.delete(itemId);
+    } else {
+      newSelected.add(itemId);
+    }
+    setSelectedItems(newSelected);
+  };
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedItems(new Set(items.map(item => item._id)));
+    } else {
+      setSelectedItems(new Set());
+    }
+  };
+
+  const handleFilterChange = (name, value) => {
+    setFilters(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSortChange = (e) => {
+      const { name, value } = e.target;
+      setFilters(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleGetPrompt = () => {
+    const selectedItemsData = items.filter(item => selectedItems.has(item._id));
+
+    if (selectedItemsData.length === 0) {
+        alert('Vui lòng chọn ít nhất một sản phẩm để tạo prompt.');
+        return;
+    }
+
+    // --- Phần Hướng dẫn Đầu (Giữ nguyên) ---
+    const promptIntro = `Bạn là một chuyên gia mua bán sản phẩm công nghệ cũ tại Việt Nam. Nhiệm vụ của bạn là đánh giá các sản phẩm được rao bán dưới đây để quyết định xem có nên mua hay không, dựa trên khả năng bán lại nhanh chóng và lợi nhuận tiềm năng.
+    Tham khảo giá thu củ đổi mới tại các cửa hàng công nghệ fpt, thegioididong, https://cellphones.com.vn/thu-cu-doi-moi, các cửa hàng tại việt nam, hãy tham khảo trên internet thông tin chính xác nhất. hãy đánh giá như 1 người thợ thầy, trả giá mua thấp hơn các cửa hàng, vậy thì mới cạnh tranh giá bán lại được.
+
+Hãy thực hiện các bước sau để đánh giá từng sản phẩm:
+
+1.  Phân tích thông tin chi tiết của sản phẩm để xác định giá trị thực của nó.
+2.  Đánh giá tình trạng thị trường hiện tại cho dòng sản phẩm này tại Việt Nam.
+3.  Xác định xem sản phẩm có thể bán lại nhanh chóng hay không (mục tiêu là bán nhanh).
+4.  Ước tính lợi nhuận tiềm năng nếu mua sản phẩm với giá rao bán hiện tại.`;
+
+
+    // --- Phần Hướng dẫn Cuối & Định dạng (Giữ nguyên) ---
+    const promptConclusion = `Hãy nghiên cứu thị trường cho từng dòng máy, nếu thu lại có bán nhanh được không, biên độ lãi là bao nhiêu. Thời gian bán lại phải nhanh.
+
+Vui lòng cung cấp đánh giá cho TẤT CẢ các sản phẩm đã liệt kê ở trên theo định dạng JSON array chính xác như sau:
+\`\`\`json
+[
+  {
+    "_id": "item_id_cua_san_pham_1", // ID sản phẩm dạng string
+    "type": 1, // 1: Nên mua, 2: Thương lượng, 3: Không mua
+    "buy_price": 1000000, // Giá mua đề xuất (VND) - phải thấp hơn giá thị trường ít nhất 15-20% để đảm bảo lợi nhuận, thấp hơn giá các cửa hàng, thợ, nhưng vẫn hợp lý để thương lượng.
+    "sell_price": 1200000, // Giá bán dự kiến (VND) - giá bán ra rẻ hơn thị trường 5-10%, đảm bảo lợi nhuận tối thiểu 15-20%, và phải bán được trong vòng 1-2 tuần. 
+    "new_title": "iPhone 11 Pro 64GB Xám - Pin 90% - Bảo hành 3 tháng", // Tiêu đề đã tối ưu SEO với đầy đủ thông tin quan trọng
+    "note": "Phân tích chi tiết: [Phân tích thị trường chi tiết] ngắn gọn. Tình trạng: [Đánh giá cụ thể về tình trạng sản phẩm]. Hãy chọn những sản phẩm, RẤT NÊN MUA, KÈO THƠM trong note Giá thị trường hiện tại từ [X] đến [Y]. Lợi nhuận dự kiến: [Z]%. Tin nhắn đề xuất: \"Em đang tìm máy để dùng cá nhân, em thấy máy anh/chị còn đẹp, em có thể mua với giá [giá cụ thể (dựa vào buy price)] được không ạ?\", thật súc tích, ngắn gọn.",
+  },
+
+  // Chỉ có type 1 cần thêm nhiều filed thông tin, Nếu type 2, 3 chỉ cần type và note, nêu lý do cần thương lượng và giá/điều kiện đề xuất với người bán. Nếu type 3, nêu lý do không mua ngắn gọn.  
+
+  {
+    "_id": "item_id_cua_san_pham_2", // ID sản phẩm dạng string
+    "type": 2, 
+    "note": "Ví dụ: Giá rao hơi cao so với thị trường, cần thương lượng giảm X đồng." 
+  },
+  {
+    "_id": "item_id_cua_san_pham_3", // ID sản phẩm dạng string
+    "type": 3, 
+    "note": "Giá rao quá cao." 
+  }
+  // ... thêm các object cho các sản phẩm khác đã được cung cấp
+]
+\`\`\`
+
+Lưu ý quan trọng:
+Đối với các sản phẩm được đánh giá là "type: 1" (Nên mua), phảiCỰC KỲ KỸ LƯỠNG trước khi lựa chọn, nhớ nha phải thật cân nhắc, những sản phẩm RẤT NÊN MUA, KÈO THƠM thì mới chọn:
+- Nghiên cứu thị trường kỹ lưỡng: Xác định chính xác nhu cầu thực tế cho dòng sản phẩm này tại Việt Nam. Phân tích xu hướng tiêu dùng hiện tại, mức độ phổ biến của model này. So sánh với các model mới hơn để đánh giá khả năng lỗi thời.
+- Đánh giá tình trạng: Phân tích chi tiết dựa vào mô tả và hình ảnh. Đặc biệt chú ý đến tình trạng màn hình, pin, các vết trầy xước, dấu hiệu sửa chữa, thay thế linh kiện. Đánh giá mức độ ảnh hưởng của các khiếm khuyết đến giá trị và khả năng bán lại.
+- Định giá mua (buy_price): Phải tính toán cực kỹ để đảm bảo lợi nhuận. Tham khảo giá thu cũ của các cửa hàng lớn và giá thực tế đang giao dịch trên thị trường. Phải thấp hơn đáng kể so với giá thị trường nhưng vẫn hợp lý đối với người bán. Chênh lệch giữa giá mua và giá bán dự kiến phải có biên lợi nhuận tối thiểu 15-20% sau khi trừ các chi phí (vận chuyển, kiểm tra, bảo quản).
+- Định giá bán (sell_price): Phải thấp hơn ít nhất 5-10% so với giá thị trường của sản phẩm tương tự để đảm bảo bán nhanh, không thấp hơn giá của người bán đề xuất, tại vì thấp hơn thì người bán tự bán chứ bán cho mình làm gì, nhưng vẫn đủ cao để có lợi nhuận. Cân nhắc kỹ yếu tố cạnh tranh và tốc độ bán hàng.
+- Nghĩa là buy_price thấp hơn Giá Được Người Dùng Rao Bán, Giá Được Người Dùng Rao Bán lại thấp hơn sell_price. 
+- Tốc độ bán lại: Phải đánh giá chính xác khả năng bán trong vòng 1-2 tuần. Các sản phẩm mất hơn 2 tuần để bán sẽ ảnh hưởng đến dòng tiền và tỷ suất lợi nhuận thực tế. Chỉ chọn những sản phẩm có khả năng bán nhanh cao.
+- Phân tích rủi ro: Đánh giá toàn diện các rủi ro như sản phẩm có thể có lỗi tiềm ẩn, khả năng giảm giá đột ngột (do ra mắt model mới), chi phí sửa chữa nếu phát hiện vấn đề sau khi mua. Chỉ chọn mua khi rủi ro thấp.
+- Tối ưu tin đăng: "new_title" phải được tối ưu SEO, nêu bật những đặc điểm quan trọng nhất của sản phẩm (model, dung lượng, màu sắc, tình trạng pin, bảo hành) để thu hút người mua tiềm năng khi đăng bán lại.
+- Cân nhắc tính thanh khoản dài hạn: Đánh giá khả năng duy trì giá trị của sản phẩm trong 1-2 tháng tới nếu không bán được ngay. Tránh các sản phẩm có nguy cơ mất giá nhanh.
+  
+- Dựa vào các thông tin như description, ưu tiên mua của người bán không rành giá hoặc cần tiền gấp, dựa vào tiêu đề thông tin chi tiết, xem xét câu từ, icon (thường người bán chuyên sẽ viết des có icon, sử dụng từ chuyên ngành), ... để xem người bán có phải thợ, chuyên nghiệp, tránh những người này vì mua sẽ không có lời.
+- Đảm bảo trả về một JSON array hợp lệ chứa đối tượng đánh giá cho TẤT CẢ các sản phẩm được cung cấp ở trên.
+- Các sản phẩm là độc lập, đánh giá riêng lẻ từng cái.
+- ID sản phẩm trong JSON phải là kiểu string.
+- KHÔNG BAO GIỜ mua các sản phẩm quá cũ (thường là 3-4 năm trở lên), quá lỗi thời, hoặc có dấu hiệu hư hỏng.
+- Trả giá mua thấp hơn các cửa hàng 15-20% để đảm bảo lợi nhuận. Yêu cầu tuyệt đối: sản phẩm phải bán lại được trong vòng 1-2 tuần.
+- Phân tích chi tiết lý do với các sản phẩm type 1, đặc biệt là phân tích thị trường, tình trạng sản phẩm, lợi nhuận dự kiến và thời gian bán ước tính.
+`;
+
+    // --- Tạo chuỗi thông tin động cho từng sản phẩm ---
+    const itemDataStrings = selectedItemsData.map((item, index) => {
+        // Hàm helper (giữ nguyên)
+        const getSafe = (obj, path, defaultValue = null) => { // Thay đổi defaultValue thành null để dễ kiểm tra hơn
+            const keys = Array.isArray(path) ? path : path.replace(/\[(\w+)\]/g, '.$1').replace(/^\./, '').split('.');
+            let result = obj;
+            for (const key of keys) {
+                if (result === null || typeof result !== 'object') return defaultValue;
+                result = result[key];
+                if (result === undefined) return defaultValue;
+            }
+            return result; // Trả về giá trị tìm được hoặc null
+        };
+
+        // --- Bắt đầu xây dựng chuỗi cho sản phẩm này ---
+        let detailsString = `--- Thông tin Sản phẩm ${index + 1} ---\n`;
+
+        // 1. Thêm các thông tin cố định, quan trọng
+        const id = getSafe(item, '_id');
+        if (id !== null) detailsString += `- ID Sản Phẩm: "${id}"\n`; // Đảm bảo ID là string
+
+        const categoryKey = getSafe(item, 'item_category');
+        const categoryDisplay = categoryKey ? (CATEGORIES[categoryKey] || categoryKey) : null;
+        if (categoryDisplay) detailsString += `- Loại Sản Phẩm: ${categoryDisplay}\n`;
+
+        const title = getSafe(item, 'title');
+        if (title) detailsString += `- Tiêu Đề: ${title}\n`;
+
+        const price = getSafe(item, 'price_str');
+        if (price) detailsString += `- Giá Được Người Dùng Rao Bán: ${price}\n`;
+
+        const updateTime = getSafe(item, 'update_time');
+        if (updateTime) detailsString += `- Thời Gian Đăng: ${updateTime}\n`;
+
+        const location = getSafe(item, 'location.full_location');
+        if (location) detailsString += `- Địa Điểm: ${location}\n`;
+
+        // 2. Thêm TOÀN BỘ thong_tin_chi_tiet dưới dạng JSON string được định dạng
+        const thongTinChiTietObj = getSafe(item, 'thong_tin_chi_tiet');
+        if (typeof thongTinChiTietObj === 'object' && thongTinChiTietObj !== null && Object.keys(thongTinChiTietObj).length > 0) {
+             detailsString += `- Thông Tin Chi Tiết Khác:\n`;
+             // Sử dụng JSON.stringify để chuyển đổi cả object thành chuỗi JSON
+             // Tham số thứ 3 (số 2) để tạo thụt lề, giúp dễ đọc hơn
+             detailsString += JSON.stringify(thongTinChiTietObj, null, 2);
+        } else {
+             // Có thể bỏ qua nếu không có thông tin chi tiết
+             // detailsString += `- Thông Tin Chi Tiết Khác: Không có\n`;
+        }
+
+
+        // 3. Thêm mô tả của người bán (quan trọng)
+        const description = getSafe(item, 'detailed_description');
+        if (description) {
+            detailsString += `- Mô Tả Người Bán: ${description.replace(/\n+/g, ' ')}\n`; // Thay nhiều newline bằng 1 space
+        }
+
+        return detailsString.trim(); // Loại bỏ khoảng trắng thừa
+
+    }).join('\n\n'); // Ngăn cách các sản phẩm bằng dòng trống
+
+
+    // --- Kết hợp các phần để tạo prompt cuối cùng ---
+    const finalPrompt = `${promptIntro}
+
+Hãy đánh giá các sản phẩm có thông tin chi tiết như sau:
+
+${itemDataStrings}
+
+${promptConclusion}`;
+
+    // Sao chép vào clipboard và thông báo
+    navigator.clipboard.writeText(finalPrompt);
+    alert(`Prompt đã được tạo và sao chép cho ${selectedItemsData.length} sản phẩm!`);
+};
+
+  const formatInputPrice = (value) => {
+    if (!value) return '';
+    return new Intl.NumberFormat('vi-VN').format(value);
+  };
+
+  const handlePriceInputChange = (e) => {
+    const { name, value } = e.target;
+    const numericValue = value.replace(/\D/g, '');
+    setFilters(prev => ({ ...prev, [name]: numericValue }));
+  };
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(price).replace('₫', 'đ');
+  };
+
+  const renderSpecs = (item) => {
+    const specs = [];
+    if (item.thong_tin_chi_tiet) {
+      for (const [key, value] of Object.entries(item.thong_tin_chi_tiet)) {
+        specs.push(
+          <span key={key} className="spec-item">
+            {key}: {value}
+          </span>
+        );
+      }
+    }
+    return specs;
+  };
+
+  const handleSaveEvaluation = async () => {
+    try {
+      console.log('Item ID details:', {
+        id: evaluationState.itemId,
+        type: typeof evaluationState.itemId,
+        length: evaluationState.itemId?.length,
+        value: evaluationState.itemId
+      });
+
+      const response = await axios.put(`http://localhost:5001/api/items/${evaluationState.itemId}/evaluate`, {
+        type: evaluationState.type,
+        note: evaluationState.note
+      });
+
+      if (response.data.success) {
+        setItems(prevItems => 
+          prevItems.map(item => 
+            item._id === evaluationState.itemId 
+              ? { ...item, evaluated: { type: parseInt(evaluationState.type), note: evaluationState.note } }
+              : item
+          )
+        );
+        setEvaluationState({ itemId: null, type: '', note: '', isOpen: false });
+      }
+    } catch (error) {
+      console.error('Error saving evaluation:', error);
+      console.error('Error response:', error.response?.data);
+      alert('Failed to save evaluation: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  const handleEvaluateClick = (item) => {
+    console.log('Item details:', {
+      _id: item._id,
+      type: typeof item._id,
+      length: item._id?.length
+    });
+    setEvaluationState({
+      itemId: item._id,
+      type: item.evaluated?.type?.toString() || '',
+      note: item.evaluated?.note || '',
+      isOpen: true
+    });
+  };
+
+  const getEvaluationIcon = (type) => {
+    switch (type) {
+      case 1: return '🟢';
+      case 2: return '🟡';
+      case 3: return '🔴';
+      default: return '⚪';
+    }
+  };
+
+  const getEvaluationText = (type) => {
+    switch (type) {
+      case 1: return 'Nên mua';
+      case 2: return 'Thương lượng';
+      case 3: return 'Không mua';
+      default: return 'Chưa xử lý';
+    }
+  };
+
+  const handleBulkEvaluate = async () => {
+    try {
+      const evaluations = JSON.parse(bulkEvaluationState.jsonInput);
+      
+      if (!Array.isArray(evaluations)) {
+        throw new Error('Input must be an array of evaluations');
+      }
+
+      const validEvaluations = evaluations.map(evaluation => {
+        const baseEval = {
+          _id: parseInt(evaluation._id),
+          type: parseInt(evaluation.type),
+          note: evaluation.note || ''
+        };
+
+        // Add additional fields for type 1
+        if (parseInt(evaluation.type) === 1) {
+          if (evaluation.buy_price) baseEval.buy_price = parseInt(evaluation.buy_price);
+          if (evaluation.sell_price) baseEval.sell_price = parseInt(evaluation.sell_price);
+          if (evaluation.new_title) baseEval.new_title = evaluation.new_title;
+        }
+
+        return baseEval;
+      });
+
+      console.log('Sending evaluations to server:', validEvaluations);
+
+      const response = await axios.put('http://localhost:5001/api/items/bulk-evaluate', {
+        evaluations: validEvaluations
+      });
+
+      if (response.data.success) {
+        setItems(prevItems => 
+          prevItems.map(item => {
+            const updatedEval = validEvaluations.find(e => e._id === item._id);
+            if (updatedEval) {
+              return { 
+                ...item, 
+                evaluated: { 
+                  type: updatedEval.type, 
+                  note: updatedEval.note,
+                  ...(updatedEval.type === 1 && {
+                    buy_price: updatedEval.buy_price,
+                    sell_price: updatedEval.sell_price,
+                    new_title: updatedEval.new_title
+                  })
+                } 
+              };
+            }
+            return item;
+          })
+        );
+        
+        setBulkEvaluationState({
+          isOpen: false,
+          jsonInput: '',
+          error: null
+        });
+        
+        alert('Bulk evaluation completed successfully!');
+      }
+    } catch (error) {
+      console.error('Error in bulk evaluation:', error);
+      setBulkEvaluationState(prev => ({
+        ...prev,
+        error: error.message
+      }));
+    }
+  };
+
+  const handlePageChange = (newPage) => {
+    setFilters(prev => ({ ...prev, page: newPage }));
+    setSelectedItems(new Set());
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedItems.size === 0) {
+      alert('Vui lòng chọn ít nhất một sản phẩm để xóa.');
+      return;
+    }
+
+    const confirmed = window.confirm(`Bạn có chắc chắn muốn xóa ${selectedItems.size} sản phẩm đã chọn?`);
+    if (!confirmed) return;
+
+    try {
+      const response = await axios.delete('http://localhost:5001/api/items', {
+        data: { itemIds: Array.from(selectedItems) }
+      });
+
+      if (response.data.success) {
+        // Remove deleted items from the UI
+        setItems(prevItems => prevItems.filter(item => !selectedItems.has(item._id)));
+        // Clear selection
+        setSelectedItems(new Set());
+        alert(`Đã xóa thành công ${response.data.deletedCount} sản phẩm.`);
+      }
+    } catch (error) {
+      console.error('Error deleting items:', error);
+      alert('Đã xảy ra lỗi khi xóa sản phẩm: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  const handleDeleteByType = async (type) => {
+    const typeText = type === 2 ? 'Thương lượng' : 'Không mua';
+    const confirmed = window.confirm(`Bạn có chắc chắn muốn xóa TẤT CẢ sản phẩm có trạng thái "${typeText}"?`);
+    if (!confirmed) return;
+
+    try {
+      const response = await axios.delete(`http://localhost:5001/api/items/by-type/${type}`);
+
+      if (response.data.success) {
+        // Remove deleted items from the UI
+        setItems(prevItems => prevItems.filter(item => !(item.evaluated?.type === type)));
+        // Clear selection
+        setSelectedItems(new Set());
+        alert(`Đã xóa thành công ${response.data.deletedCount} sản phẩm có trạng thái "${typeText}".`);
+        
+        // Fetch items again to update the list correctly
+        fetchItems();
+      }
+    } catch (error) {
+      console.error(`Error deleting items with type ${type}:`, error);
+      alert('Đã xảy ra lỗi khi xóa sản phẩm: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  return (
+    <div className="item-list-container">
+      <div className="filters">
+        <div className="filter-group sort-group">
+          <select name="sortBy" value={filters.sortBy} onChange={handleSortChange} className="sort-filter">
+            <option value="newest">Tin mới trước</option>
+            <option value="price-high">Giá cao trước</option>
+            <option value="price-low">Giá thấp trước</option>
+            <option value="roi-high">ROI cao trước</option>
+          </select>
+        </div>
+
+        <div className="id-search-container">
+          <input
+            type="text"
+            name="itemIds"
+            placeholder="Tìm theo ID (123, 456...)"
+            value={filters.itemIds}
+            onChange={(e) => handleFilterChange('itemIds', e.target.value)}
+            className="id-search-input"
+          />
+          <button 
+            className="reset-filters-btn" 
+            onClick={() => setFilters({
+              category: '',
+              province: '',
+              minPrice: '',
+              maxPrice: '',
+              sortBy: 'newest',
+              evaluatedType: '',
+              page: 1,
+              itemIds: '',
+            })}
+            title="Xóa bộ lọc"
+          >
+            ↺
+          </button>
+        </div>
+
+        <div className="filter-group">
+          <FilterDropdown
+            label="Danh mục"
+            options={{ '': 'Tất cả danh mục', ...CATEGORIES }}
+            selectedOptions={filters.category}
+            onChange={(value) => handleFilterChange('category', value)}
+            placeholder="Chọn danh mục"
+            isMultiSelect={false}
+          />
+        </div>
+
+        <div className="filter-group">
+          <FilterDropdown
+            label="Tỉnh/Thành phố"
+            options={{ '': 'Toàn quốc', ...PROVINCES }}
+            selectedOptions={filters.province}
+            onChange={(value) => handleFilterChange('province', value)}
+            placeholder="Chọn tỉnh/thành"
+            isMultiSelect={false}
+          />
+        </div>
+
+        <div className="filter-group">
+          <FilterDropdown
+            label="Trạng thái"
+            options={{ '': 'Tất cả trạng thái', ...EVALUATED_TYPES }}
+            selectedOptions={filters.evaluatedType}
+            onChange={(value) => handleFilterChange('evaluatedType', value)}
+            placeholder="Chọn trạng thái"
+            isMultiSelect={false}
+          />
+        </div>
+
+        <input
+          type="text"
+          name="minPrice"
+          placeholder="Giá thấp nhất"
+          value={formatInputPrice(filters.minPrice)}
+          onChange={handlePriceInputChange}
+        />
+        <input
+          type="text"
+          name="maxPrice"
+          placeholder="Giá cao nhất"
+          value={formatInputPrice(filters.maxPrice)}
+          onChange={handlePriceInputChange}
+        />
+
+        <button 
+          className="bulk-evaluate-btn"
+          onClick={() => setBulkEvaluationState(prev => ({ ...prev, isOpen: true }))}
+        >
+          Insert Eval
+        </button>
+
+        <div className="type-delete-buttons">
+          <button 
+            className="delete-type-btn type-2"
+            onClick={() => handleDeleteByType(2)}
+            title="Xóa tất cả sản phẩm có trạng thái Thương lượng"
+          >
+            Xóa 🟡
+          </button>
+          <button 
+            className="delete-type-btn type-3"
+            onClick={() => handleDeleteByType(3)}
+            title="Xóa tất cả sản phẩm có trạng thái Không mua"
+          >
+            Xóa 🔴
+          </button>
+        </div>
+      </div>
+
+      <div className="header">
+        <div className="select-all">
+          <input
+            type="checkbox"
+            onChange={handleSelectAll}
+            checked={selectedItems.size === items.length && items.length > 0}
+          />
+          <span>Chọn tất cả</span>
+        </div>
+        <div className="header-buttons">
+          <button onClick={handleGetPrompt} className="get-prompt-btn">
+            Get Prompt
+          </button>
+          <button onClick={handleDeleteSelected} className="delete-selected-btn">
+            Xóa
+          </button>
+        </div>
+      </div>
+
+      <Pagination
+        currentPage={pagination.currentPage}
+        totalPages={pagination.totalPages}
+        onPageChange={handlePageChange}
+      />
+
+      <ul className="item-list">
+        {items.map(item => (
+          <li key={item._id} className="item-card">
+            <div className="item-content">
+              <div className="top-right-controls">
+                <div className="evaluation-display">
+                  <div 
+                    className="evaluation-icon"
+                    title={item.evaluated?.type ? 
+                      `${item.evaluated.note}${item.evaluated.type === 1 ? 
+                        `\nBuy: ${formatPrice(item.evaluated.buy_price || 0)}` +
+                        `\nSell: ${formatPrice(item.evaluated.sell_price || 0)}` +
+                        `\nROI: ${(((item.evaluated.sell_price || 0) - (item.evaluated.buy_price || 0)) / (item.evaluated.buy_price || 1) * 100).toFixed(1)}%` : 
+                        ''}`
+                      : ''}
+                  >
+                    {getEvaluationIcon(item.evaluated?.type || 0)}
+                  </div>
+                  <div 
+                    className="evaluation-text"
+                    onClick={() => setEvaluationState({
+                      itemId: item._id,
+                      type: item.evaluated?.type?.toString() || '',
+                      note: item.evaluated?.note || '',
+                      isOpen: true
+                    })}
+                  >
+                    {getEvaluationText(item.evaluated?.type || 0)}
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  className="item-checkbox"
+                  checked={selectedItems.has(item._id)}
+                  onChange={() => handleCheckboxChange(item._id)}
+                />
+              </div>
+              
+              <a href={item.item_url} target="_blank" rel="noopener noreferrer" className="item-image-link">
+                <div className="item-image">
+                  <img src={item.item_images[0]} alt={item.title} />
+                </div>
+              </a>
+              
+              <div className="item-details">
+                <h3>{item.title}</h3>
+                <p className="id">{item._id}</p>
+                <p className="price">{formatPrice(item.price_num)}</p>
+                <p className="location">{item.location.full_location}</p>
+                <p className="description">{item.short_des}</p>
+                <div className="specs">
+                  {renderSpecs(item)}
+                </div>
+                <div className="user-info">
+                  <img src={item.user_image} alt={item.user_name} className="user-avatar" />
+                  <span>{item.user_name}</span>
+                </div>
+              </div>
+            </div>
+            <span className="update-time">{item.update_time}</span>
+          </li>
+        ))}
+      </ul>
+
+      {bulkEvaluationState.isOpen && (
+        <div className="bulk-evaluation-modal">
+          <div className="bulk-evaluation-content">
+            <h3>Bulk Insert Evaluations</h3>
+            <textarea
+              className="bulk-evaluation-input"
+              value={bulkEvaluationState.jsonInput}
+              onChange={(e) => setBulkEvaluationState(prev => ({ 
+                ...prev, 
+                jsonInput: e.target.value,
+                error: null 
+              }))}
+              placeholder={`
+```
+</file>
+
+<rewritten_file>
+```
+import React, { useState, useEffect } from 'react'; // Removed useMemo
+import axios from 'axios';
+import FilterDropdown from './FilterDropdown'; // Import the new component
+import Pagination from './Pagination';
+import '../styles/ItemList.css';
+
+const CATEGORIES = {
+  'dien-thoai': 'Điện thoại',
+  'laptop': 'Laptop',
+  'may-tinh-bang': 'Máy tính bảng',
+  'may-anh-may-quay': 'Máy ảnh, Máy quay',
+  'phu-kien': 'Phụ kiện (Màn hình, Chuột...)',
+  'may-tinh-de-ban': 'Máy tính để bàn',
+  'thiet-bi-deo-thong-minh': 'Thiết bị đeo thông minh'
+};
+
+const PROVINCES = {
+  'tp-ho-chi-minh': 'TP Hồ Chí Minh',
+  'ha-noi': 'Hà Nội',
+  'binh-duong': 'Bình Dương',
+  'dong-nai': 'Đồng Nai',
+  'ba-ria-vung-tau': 'Bà Rịa - Vũng Tàu',
+  'hai-phong': 'Hải Phòng',
+  'quang-ninh': 'Quảng Ninh',
+  'bac-ninh': 'Bắc Ninh',
+  'thanh-hoa': 'Thanh Hóa',
+  'hai-duong': 'Hải Dương',
+  'long-an': 'Long An',
+  'bac-giang': 'Bắc Giang',
+  'vinh-phuc': 'Vĩnh Phúc',
+  'da-nang': 'Đà Nẵng',
+  'can-tho': 'Cần Thơ',
+  'thai-nguyen': 'Thái Nguyên',
+  'hung-yen': 'Hưng Yên',
+  'khanh-hoa': 'Khánh Hòa',
+  'nghe-an': 'Nghệ An',
+  'kien-giang': 'Kiên Giang',
+  'tien-giang': 'Tiền Giang',
+  'lam-dong': 'Lâm Đồng',
+  'dak-lak': 'Đắk Lắk',
+  'quang-ngai': 'Quảng Ngãi',
+  'binh-dinh': 'Bình Định',
+  'quang-nam': 'Quảng Nam',
+  'an-giang': 'An Giang',
+  'dong-thap': 'Đồng Tháp',
+  'tay-ninh': 'Tây Ninh',
+  'binh-thuan': 'Bình Thuận',
+  'binh-phuoc': 'Bình Phước',
+  'nam-dinh': 'Nam Định',
+  'ha-tinh': 'Hà Tĩnh',
+  'gia-lai': 'Gia Lai',
+  'phu-tho': 'Phú Thọ',
+  'ninh-binh': 'Ninh Bình',
+  'tra-vinh': 'Trà Vinh',
+  'ca-mau': 'Cà Mau',
+  'vinh-long': 'Vĩnh Long',
+  'soc-trang': 'Sóc Trăng',
+  'thua-thien-hue': 'Thừa Thiên Huế',
+  'lao-cai': 'Lào Cai',
+  'ben-tre': 'Bến Tre',
+  'thai-binh': 'Thái Bình',
+  'hau-giang': 'Hậu Giang',
+  'bac-lieu': 'Bạc Liêu',
+  'hoa-binh': 'Hòa Bình',
+  'phu-yen': 'Phú Yên',
+  'quang-binh': 'Quảng Bình',
+  'ninh-thuan': 'Ninh Thuận',
+  'ha-nam': 'Hà Nam',
+  'son-la': 'Sơn La',
+  'dak-nong': 'Đắk Nông',
+  'quang-tri': 'Quảng Trị',
+  'tuyen-quang': 'Tuyên Quang',
+  'lang-son': 'Lạng Sơn',
+  'yen-bai': 'Yên Bái',
+  'kon-tum': 'Kon Tum',
+  'ha-giang': 'Hà Giang',
+  'dien-bien': 'Điện Biên',
+  'lai-chau': 'Lai Châu',
+  'cao-bang': 'Cao Bằng',
+  'bac-kan': 'Bắc Kạn'
+}
+
+const EVALUATED_TYPES = {
+  '0': '⚪ Chưa xử lý', // None
+  '1': '🟢 Nên mua',    // Should Buy
+  '2': '🟡 Thương lượng', // Negotiable
+  '3': '🔴 Không mua'   // Don't Buy
+};
+
+const ItemList = () => {
+  const [items, setItems] = useState([]);
+  const [selectedItems, setSelectedItems] = useState(new Set());
+  const [filters, setFilters] = useState({
+    category: '',
+    province: '',
+    minPrice: '',
+    maxPrice: '',
+    sortBy: 'newest',
+    evaluatedType: '',
+    page: 1,
+    itemIds: '',
+  });
+  const [pagination, setPagination] = useState({
+    total: 0,
+    totalPages: 0,
+    currentPage: 1,
+    limit: 10
+  });
+  const [evaluationState, setEvaluationState] = useState({
+    itemId: null,
+    type: '',
+    note: '',
+    isOpen: false
+  });
+  const [bulkEvaluationState, setBulkEvaluationState] = useState({
+    isOpen: false,
+    jsonInput: '',
+    error: null
+  });
+
+  // Convert Vietnamese time string to timestamp
+  const getTimeInMilliseconds = (timeString) => {
+    const now = new Date();
+    const number = parseInt(timeString.split(' ')[0]);
+    const unit = timeString.split(' ')[1];
+
+    switch (unit) {
+      case 'phút':
+      case 'phút trước':
+        return now.getTime() - (number * 60 * 1000);
+      case 'giờ':
+      case 'giờ trước':
+        return now.getTime() - (number * 60 * 60 * 1000);
+      case 'ngày':
+      case 'ngày trước':
+        return now.getTime() - (number * 24 * 60 * 60 * 1000);
+      case 'tuần':
+      case 'tuần trước':
+        return now.getTime() - (number * 7 * 24 * 60 * 60 * 1000);
+      case 'tháng':
+      case 'tháng trước':
+        return now.getTime() - (number * 30 * 24 * 60 * 60 * 1000);
+      case 'năm':
+      case 'năm trước':
+        return now.getTime() - (number * 365 * 24 * 60 * 60 * 1000);
+      default:
+        return now.getTime();
+    }
+  };
+
+  useEffect(() => {
+    fetchItems();
+  }, [filters]);
+
+  const fetchItems = async () => {
+    try {
+      // Create a copy of filters to modify
+      const params = { ...filters };
+      
+      // Process itemIds if they exist
+      if (params.itemIds) {
+        // Split by comma, trim whitespace, and filter out empty strings
+        params.itemIds = params.itemIds.split(',')
+          .map(id => id.trim())
+          .filter(id => id !== '')
+          .join(',');
+      }
+      
+      // Remove empty filters
+      Object.keys(params).forEach(key => {
+        if (params[key] === '') {
+          delete params[key];
+        }
+      });
+      
+      const response = await axios.get('http://localhost:5001/api/items', { params });
+      
+      let sortedItems = [...response.data.items];
+      
+      // Sort items based on selected option - only time-based sorting needs client-side handling
+      if (filters.sortBy === 'newest') {
+        sortedItems.sort((a, b) => {
+          const timeA = getTimeInMilliseconds(a.update_time);
+          const timeB = getTimeInMilliseconds(b.update_time);
+          return timeB - timeA;
+        });
+      }
+      // All other sorting (price-high, price-low, roi-high) is handled by the server
+      
+      setItems(sortedItems);
+      setPagination(response.data.pagination);
+    } catch (error) {
+      console.error('Error fetching items:', error);
+    }
+  };
+
+  const handleCheckboxChange = (itemId) => {
+    const newSelected = new Set(selectedItems);
+    if (newSelected.has(itemId)) {
+      newSelected.delete(itemId);
+    } else {
+      newSelected.add(itemId);
+    }
+    setSelectedItems(newSelected);
+  };
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedItems(new Set(items.map(item => item._id)));
+    } else {
+      setSelectedItems(new Set());
+    }
+  };
+
+  const handleFilterChange = (name, value) => {
+    setFilters(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSortChange = (e) => {
+      const { name, value } = e.target;
+      setFilters(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleGetPrompt = () => {
+    const selectedItemsData = items.filter(item => selectedItems.has(item._id));
+
+    if (selectedItemsData.length === 0) {
+        alert('Vui lòng chọn ít nhất một sản phẩm để tạo prompt.');
+        return;
+    }
+
+    // --- Phần Hướng dẫn Đầu (Giữ nguyên) ---
+    const promptIntro = `Bạn là một chuyên gia mua bán sản phẩm công nghệ cũ tại Việt Nam. Nhiệm vụ của bạn là đánh giá các sản phẩm được rao bán dưới đây để quyết định xem có nên mua hay không, dựa trên khả năng bán lại nhanh chóng và lợi nhuận tiềm năng.
+    Tham khảo giá thu củ đổi mới tại các cửa hàng công nghệ fpt, thegioididong, https://cellphones.com.vn/thu-cu-doi-moi, các cửa hàng tại việt nam, hãy tham khảo trên internet thông tin chính xác nhất. hãy đánh giá như 1 người thợ thầy, trả giá mua thấp hơn các cửa hàng, vậy thì mới cạnh tranh giá bán lại được.
+
+Hãy thực hiện các bước sau để đánh giá từng sản phẩm:
+
+1.  Phân tích thông tin chi tiết của sản phẩm để xác định giá trị thực của nó.
+2.  Đánh giá tình trạng thị trường hiện tại cho dòng sản phẩm này tại Việt Nam.
+3.  Xác định xem sản phẩm có thể bán lại nhanh chóng hay không (mục tiêu là bán nhanh).
+4.  Ước tính lợi nhuận tiềm năng nếu mua sản phẩm với giá rao bán hiện tại.`;
+
+
+    // --- Phần Hướng dẫn Cuối & Định dạng (Giữ nguyên) ---
+    const promptConclusion = `Hãy nghiên cứu thị trường cho từng dòng máy, nếu thu lại có bán nhanh được không, biên độ lãi là bao nhiêu. Thời gian bán lại phải nhanh.
+
+Vui lòng cung cấp đánh giá cho TẤT CẢ các sản phẩm đã liệt kê ở trên theo định dạng JSON array chính xác như sau:
+\`\`\`json
+[
+  {
+    "_id": "item_id_cua_san_pham_1", // ID sản phẩm dạng string
+    "type": 1, // 1: Nên mua, 2: Thương lượng, 3: Không mua
+    "buy_price": 1000000, // Giá mua đề xuất (VND) - phải thấp hơn giá thị trường ít nhất 15-20% để đảm bảo lợi nhuận, thấp hơn giá các cửa hàng, thợ, nhưng vẫn hợp lý để thương lượng.
+    "sell_price": 1200000, // Giá bán dự kiến (VND) - giá bán ra rẻ hơn thị trường 5-10%, đảm bảo lợi nhuận tối thiểu 15-20%, và phải bán được trong vòng 1-2 tuần. 
+    "new_title": "iPhone 11 Pro 64GB Xám - Pin 90% - Bảo hành 3 tháng", // Tiêu đề đã tối ưu SEO với đầy đủ thông tin quan trọng
+    "note": "Phân tích chi tiết: [Phân tích thị trường chi tiết] ngắn gọn. Tình trạng: [Đánh giá cụ thể về tình trạng sản phẩm]. Hãy chọn những sản phẩm, RẤT NÊN MUA, KÈO THƠM trong note Giá thị trường hiện tại từ [X] đến [Y]. Lợi nhuận dự kiến: [Z]%. Tin nhắn đề xuất: \"Em đang tìm máy để dùng cá nhân, em thấy máy anh/chị còn đẹp, em có thể mua với giá [giá cụ thể (dựa vào buy price)] được không ạ?\", thật súc tích, ngắn gọn.",
+  },
+
+  // Chỉ có type 1 cần thêm nhiều filed thông tin, Nếu type 2, 3 chỉ cần type và note, nêu lý do cần thương lượng và giá/điều kiện đề xuất với người bán. Nếu type 3, nêu lý do không mua ngắn gọn.  
+
+  {
+    "_id": "item_id_cua_san_pham_2", // ID sản phẩm dạng string
+    "type": 2, 
+    "note": "Ví dụ: Giá rao hơi cao so với thị trường, cần thương lượng giảm X đồng." 
+  },
+  {
+    "_id": "item_id_cua_san_pham_3", // ID sản phẩm dạng string
+    "type": 3, 
+    "note": "Giá rao quá cao." 
+  }
+  // ... thêm các object cho các sản phẩm khác đã được cung cấp
+]
+\`\`\`
+
+Lưu ý quan trọng:
+Đối với các sản phẩm được đánh giá là "type: 1" (Nên mua), phảiCỰC KỲ KỸ LƯỠNG trước khi lựa chọn, nhớ nha phải thật cân nhắc, những sản phẩm RẤT NÊN MUA, KÈO THƠM thì mới chọn:
+- Nghiên cứu thị trường kỹ lưỡng: Xác định chính xác nhu cầu thực tế cho dòng sản phẩm này tại Việt Nam. Phân tích xu hướng tiêu dùng hiện tại, mức độ phổ biến của model này. So sánh với các model mới hơn để đánh giá khả năng lỗi thời.
+- Đánh giá tình trạng: Phân tích chi tiết dựa vào mô tả và hình ảnh. Đặc biệt chú ý đến tình trạng màn hình, pin, các vết trầy xước, dấu hiệu sửa chữa, thay thế linh kiện. Đánh giá mức độ ảnh hưởng của các khiếm khuyết đến giá trị và khả năng bán lại.
+- Định giá mua (buy_price): Phải tính toán cực kỹ để đảm bảo lợi nhuận. Tham khảo giá thu cũ của các cửa hàng lớn và giá thực tế đang giao dịch trên thị trường. Phải thấp hơn đáng kể so với giá thị trường nhưng vẫn hợp lý đối với người bán. Chênh lệch giữa giá mua và giá bán dự kiến phải có biên lợi nhuận tối thiểu 15-20% sau khi trừ các chi phí (vận chuyển, kiểm tra, bảo quản).
+- Định giá bán (sell_price): Phải thấp hơn ít nhất 5-10% so với giá thị trường của sản phẩm tương tự để đảm bảo bán nhanh, không thấp hơn giá của người bán đề xuất, tại vì thấp hơn thì người bán tự bán chứ bán cho mình làm gì, nhưng vẫn đủ cao để có lợi nhuận. Cân nhắc kỹ yếu tố cạnh tranh và tốc độ bán hàng.
+- Nghĩa là buy_price thấp hơn Giá Được Người Dùng Rao Bán, Giá Được Người Dùng Rao Bán lại thấp hơn sell_price. 
+- Tốc độ bán lại: Phải đánh giá chính xác khả năng bán trong vòng 1-2 tuần. Các sản phẩm mất hơn 2 tuần để bán sẽ ảnh hưởng đến dòng tiền và tỷ suất lợi nhuận thực tế. Chỉ chọn những sản phẩm có khả năng bán nhanh cao.
+- Phân tích rủi ro: Đánh giá toàn diện các rủi ro như sản phẩm có thể có lỗi tiềm ẩn, khả năng giảm giá đột ngột (do ra mắt model mới), chi phí sửa chữa nếu phát hiện vấn đề sau khi mua. Chỉ chọn mua khi rủi ro thấp.
+- Tối ưu tin đăng: "new_title" phải được tối ưu SEO, nêu bật những đặc điểm quan trọng nhất của sản phẩm (model, dung lượng, màu sắc, tình trạng pin, bảo hành) để thu hút người mua tiềm năng khi đăng bán lại.
+- Cân nhắc tính thanh khoản dài hạn: Đánh giá khả năng duy trì giá trị của sản phẩm trong 1-2 tháng tới nếu không bán được ngay. Tránh các sản phẩm có nguy cơ mất giá nhanh.
+  
+- Dựa vào các thông tin như description, ưu tiên mua của người bán không rành giá hoặc cần tiền gấp, dựa vào tiêu đề thông tin chi tiết, xem xét câu từ, icon (thường người bán chuyên sẽ viết des có icon, sử dụng từ chuyên ngành), ... để xem người bán có phải thợ, chuyên nghiệp, tránh những người này vì mua sẽ không có lời.
+- Đảm bảo trả về một JSON array hợp lệ chứa đối tượng đánh giá cho TẤT CẢ các sản phẩm được cung cấp ở trên.
+- Các sản phẩm là độc lập, đánh giá riêng lẻ từng cái.
+- ID sản phẩm trong JSON phải là kiểu string.
+- KHÔNG BAO GIỜ mua các sản phẩm quá cũ (thường là 3-4 năm trở lên), quá lỗi thời, hoặc có dấu hiệu hư hỏng.
+- Trả giá mua thấp hơn các cửa hàng 15-20% để đảm bảo lợi nhuận. Yêu cầu tuyệt đối: sản phẩm phải bán lại được trong vòng 1-2 tuần.
+- Phân tích chi tiết lý do với các sản phẩm type 1, đặc biệt là phân tích thị trường, tình trạng sản phẩm, lợi nhuận dự kiến và thời gian bán ước tính.
+`;
+
+    // --- Tạo chuỗi thông tin động cho từng sản phẩm ---
+    const itemDataStrings = selectedItemsData.map((item, index) => {
+        // Hàm helper (giữ nguyên)
+        const getSafe = (obj, path, defaultValue = null) => { // Thay đổi defaultValue thành null để dễ kiểm tra hơn
+            const keys = Array.isArray(path) ? path : path.replace(/\[(\w+)\]/g, '.$1').replace(/^\./, '').split('.');
+            let result = obj;
+            for (const key of keys) {
+                if (result === null || typeof result !== 'object') return defaultValue;
+                result = result[key];
+                if (result === undefined) return defaultValue;
+            }
+            return result; // Trả về giá trị tìm được hoặc null
+        };
+
+        // --- Bắt đầu xây dựng chuỗi cho sản phẩm này ---
+        let detailsString = `--- Thông tin Sản phẩm ${index + 1} ---\n`;
+
+        // 1. Thêm các thông tin cố định, quan trọng
+        const id = getSafe(item, '_id');
+        if (id !== null) detailsString += `- ID Sản Phẩm: "${id}"\n`; // Đảm bảo ID là string
+
+        const categoryKey = getSafe(item, 'item_category');
+        const categoryDisplay = categoryKey ? (CATEGORIES[categoryKey] || categoryKey) : null;
+        if (categoryDisplay) detailsString += `- Loại Sản Phẩm: ${categoryDisplay}\n`;
+
+        const title = getSafe(item, 'title');
+        if (title) detailsString += `- Tiêu Đề: ${title}\n`;
+
+        const price = getSafe(item, 'price_str');
+        if (price) detailsString += `- Giá Được Người Dùng Rao Bán: ${price}\n`;
+
+        const updateTime = getSafe(item, 'update_time');
+        if (updateTime) detailsString += `- Thời Gian Đăng: ${updateTime}\n`;
+
+        const location = getSafe(item, 'location.full_location');
+        if (location) detailsString += `- Địa Điểm: ${location}\n`;
+
+        // 2. Thêm TOÀN BỘ thong_tin_chi_tiet dưới dạng JSON string được định dạng
+        const thongTinChiTietObj = getSafe(item, 'thong_tin_chi_tiet');
+        if (typeof thongTinChiTietObj === 'object' && thongTinChiTietObj !== null && Object.keys(thongTinChiTietObj).length > 0) {
+             detailsString += `- Thông Tin Chi Tiết Khác:\n`;
+             // Sử dụng JSON.stringify để chuyển đổi cả object thành chuỗi JSON
+             // Tham số thứ 3 (số 2) để tạo thụt lề, giúp dễ đọc hơn
+             detailsString += JSON.stringify(thongTinChiTietObj, null, 2);
+        } else {
+             // Có thể bỏ qua nếu không có thông tin chi tiết
+             // detailsString += `- Thông Tin Chi Tiết Khác: Không có\n`;
+        }
+
+
+        // 3. Thêm mô tả của người bán (quan trọng)
+        const description = getSafe(item, 'detailed_description');
+        if (description) {
+            detailsString += `- Mô Tả Người Bán: ${description.replace(/\n+/g, ' ')}\n`; // Thay nhiều newline bằng 1 space
+        }
+
+        return detailsString.trim(); // Loại bỏ khoảng trắng thừa
+
+    }).join('\n\n'); // Ngăn cách các sản phẩm bằng dòng trống
+
+
+    // --- Kết hợp các phần để tạo prompt cuối cùng ---
+    const finalPrompt = `${promptIntro}
+
+Hãy đánh giá các sản phẩm có thông tin chi tiết như sau:
+
+${itemDataStrings}
+
+${promptConclusion}`;
+
+    // Sao chép vào clipboard và thông báo
+    navigator.clipboard.writeText(finalPrompt);
+    alert(`Prompt đã được tạo và sao chép cho ${selectedItemsData.length} sản phẩm!`);
+};
+
+  const formatInputPrice = (value) => {
+    if (!value) return '';
+    return new Intl.NumberFormat('vi-VN').format(value);
+  };
+
+  const handlePriceInputChange = (e) => {
+    const { name, value } = e.target;
+    const numericValue = value.replace(/\D/g, '');
+    setFilters(prev => ({ ...prev, [name]: numericValue }));
+  };
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(price).replace('₫', 'đ');
+  };
+
+  const renderSpecs = (item) => {
+    const specs = [];
+    if (item.thong_tin_chi_tiet) {
+      for (const [key, value] of Object.entries(item.thong_tin_chi_tiet)) {
+        specs.push(
+          <span key={key} className="spec-item">
+            {key}: {value}
+          </span>
+        );
+      }
+    }
+    return specs;
+  };
+
+  const handleSaveEvaluation = async () => {
+    try {
+      console.log('Item ID details:', {
+        id: evaluationState.itemId,
+        type: typeof evaluationState.itemId,
+        length: evaluationState.itemId?.length,
+        value: evaluationState.itemId
+      });
+
+      const response = await axios.put(`http://localhost:5001/api/items/${evaluationState.itemId}/evaluate`, {
+        type: evaluationState.type,
+        note: evaluationState.note
+      });
+
+      if (response.data.success) {
+        setItems(prevItems => 
+          prevItems.map(item => 
+            item._id === evaluationState.itemId 
+              ? { ...item, evaluated: { type: parseInt(evaluationState.type), note: evaluationState.note } }
+              : item
+          )
+        );
+        setEvaluationState({ itemId: null, type: '', note: '', isOpen: false });
+      }
+    } catch (error) {
+      console.error('Error saving evaluation:', error);
+      console.error('Error response:', error.response?.data);
+      alert('Failed to save evaluation: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  const handleEvaluateClick = (item) => {
+    console.log('Item details:', {
+      _id: item._id,
+      type: typeof item._id,
+      length: item._id?.length
+    });
+    setEvaluationState({
+      itemId: item._id,
+      type: item.evaluated?.type?.toString() || '',
+      note: item.evaluated?.note || '',
+      isOpen: true
+    });
+  };
+
+  const getEvaluationIcon = (type) => {
+    switch (type) {
+      case 1: return '🟢';
+      case 2: return '🟡';
+      case 3: return '🔴';
+      default: return '⚪';
+    }
+  };
+
+  const getEvaluationText = (type) => {
+    switch (type) {
+      case 1: return 'Nên mua';
+      case 2: return 'Thương lượng';
+      case 3: return 'Không mua';
+      default: return 'Chưa xử lý';
+    }
+  };
+
+  const handleBulkEvaluate = async () => {
+    try {
+      const evaluations = JSON.parse(bulkEvaluationState.jsonInput);
+      
+      if (!Array.isArray(evaluations)) {
+        throw new Error('Input must be an array of evaluations');
+      }
+
+      const validEvaluations = evaluations.map(evaluation => {
+        const baseEval = {
+          _id: parseInt(evaluation._id),
+          type: parseInt(evaluation.type),
+          note: evaluation.note || ''
+        };
+
+        // Add additional fields for type 1
+        if (parseInt(evaluation.type) === 1) {
+          if (evaluation.buy_price) baseEval.buy_price = parseInt(evaluation.buy_price);
+          if (evaluation.sell_price) baseEval.sell_price = parseInt(evaluation.sell_price);
+          if (evaluation.new_title) baseEval.new_title = evaluation.new_title;
+        }
+
+        return baseEval;
+      });
+
+      console.log('Sending evaluations to server:', validEvaluations);
+
+      const response = await axios.put('http://localhost:5001/api/items/bulk-evaluate', {
+        evaluations: validEvaluations
+      });
+
+      if (response.data.success) {
+        setItems(prevItems => 
+          prevItems.map(item => {
+            const updatedEval = validEvaluations.find(e => e._id === item._id);
+            if (updatedEval) {
+              return { 
+                ...item, 
+                evaluated: { 
+                  type: updatedEval.type, 
+                  note: updatedEval.note,
+                  ...(updatedEval.type === 1 && {
+                    buy_price: updatedEval.buy_price,
+                    sell_price: updatedEval.sell_price,
+                    new_title: updatedEval.new_title
+                  })
+                } 
+              };
+            }
+            return item;
+          })
+        );
+        
+        setBulkEvaluationState({
+          isOpen: false,
+          jsonInput: '',
+          error: null
+        });
+        
+        alert('Bulk evaluation completed successfully!');
+      }
+    } catch (error) {
+      console.error('Error in bulk evaluation:', error);
+      setBulkEvaluationState(prev => ({
+        ...prev,
+        error: error.message
+      }));
+    }
+  };
+
+  const handlePageChange = (newPage) => {
+    setFilters(prev => ({ ...prev, page: newPage }));
+    setSelectedItems(new Set());
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedItems.size === 0) {
+      alert('Vui lòng chọn ít nhất một sản phẩm để xóa.');
+      return;
+    }
+
+    const confirmed = window.confirm(`Bạn có chắc chắn muốn xóa ${selectedItems.size} sản phẩm đã chọn?`);
+    if (!confirmed) return;
+
+    try {
+      const response = await axios.delete('http://localhost:5001/api/items', {
+        data: { itemIds: Array.from(selectedItems) }
+      });
+
+      if (response.data.success) {
+        // Remove deleted items from the UI
+        setItems(prevItems => prevItems.filter(item => !selectedItems.has(item._id)));
+        // Clear selection
+        setSelectedItems(new Set());
+        alert(`Đã xóa thành công ${response.data.deletedCount} sản phẩm.`);
+      }
+    } catch (error) {
+      console.error('Error deleting items:', error);
+      alert('Đã xảy ra lỗi khi xóa sản phẩm: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  const handleDeleteByType = async (type) => {
+    const typeText = type === 2 ? 'Thương lượng' : 'Không mua';
+    const confirmed = window.confirm(`Bạn có chắc chắn muốn xóa TẤT CẢ sản phẩm có trạng thái "${typeText}"?`);
+    if (!confirmed) return;
+
+    try {
+      const response = await axios.delete(`http://localhost:5001/api/items/by-type/${type}`);
+
+      if (response.data.success) {
+        // Remove deleted items from the UI
+        setItems(prevItems => prevItems.filter(item => !(item.evaluated?.type === type)));
+        // Clear selection
+        setSelectedItems(new Set());
+        alert(`Đã xóa thành công ${response.data.deletedCount} sản phẩm có trạng thái "${typeText}".`);
+        
+        // Fetch items again to update the list correctly
+        fetchItems();
+      }
+    } catch (error) {
+      console.error(`Error deleting items with type ${type}:`, error);
+      alert('Đã xảy ra lỗi khi xóa sản phẩm: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  return (
+    <div className="item-list-container">
+      <div className="filters">
+        <div className="filter-group sort-group">
+          <select name="sortBy" value={filters.sortBy} onChange={handleSortChange} className="sort-filter">
+            <option value="newest">Tin mới trước</option>
+            <option value="price-high">Giá cao trước</option>
+            <option value="price-low">Giá thấp trước</option>
+            <option value="roi-high">ROI cao trước</option>
+          </select>
+        </div>
+
+        <div className="id-search-container">
+          <input
+            type="text"
+            name="itemIds"
+            placeholder="Tìm theo ID (123, 456...)"
+            value={filters.itemIds}
+            onChange={(e) => handleFilterChange('itemIds', e.target.value)}
+            className="id-search-input"
+          />
+          <button 
+            className="reset-filters-btn" 
+            onClick={() => setFilters({
+              category: '',
+              province: '',
+              minPrice: '',
+              maxPrice: '',
+              sortBy: 'newest',
+              evaluatedType: '',
+              page: 1,
+              itemIds: '',
+            })}
+            title="Xóa bộ lọc"
+          >
+            ↺
+          </button>
+        </div>
+
+        <div className="filter-group">
+          <FilterDropdown
+            label="Danh mục"
+            options={{ '': 'Tất cả danh mục', ...CATEGORIES }}
+            selectedOptions={filters.category}
+            onChange={(value) => handleFilterChange('category', value)}
+            placeholder="Chọn danh mục"
+            isMultiSelect={false}
+          />
+        </div>
+
+        <div className="filter-group">
+          <FilterDropdown
+            label="Tỉnh/Thành phố"
+            options={{ '': 'Toàn quốc', ...PROVINCES }}
+            selectedOptions={filters.province}
+            onChange={(value) => handleFilterChange('province', value)}
+            placeholder="Chọn tỉnh/thành"
+            isMultiSelect={false}
+          />
+        </div>
+
+        <div className="filter-group">
+          <FilterDropdown
+            label="Trạng thái"
+            options={{ '': 'Tất cả trạng thái', ...EVALUATED_TYPES }}
+            selectedOptions={filters.evaluatedType}
+            onChange={(value) => handleFilterChange('evaluatedType', value)}
+            placeholder="Chọn trạng thái"
+            isMultiSelect={false}
+          />
+        </div>
+
+        <input
+          type="text"
+          name="minPrice"
+          placeholder="Giá thấp nhất"
+          value={formatInputPrice(filters.minPrice)}
+          onChange={handlePriceInputChange}
+        />
+        <input
+          type="text

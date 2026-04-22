@@ -1,0 +1,121 @@
+2025-05-14 16:35:31,585 - INFO - <module> - ==================================================
+2025-05-14 16:35:31,585 - INFO - <module> - 🚀 Starting Facebook Marketplace Posting Automation Script
+2025-05-14 16:35:31,585 - INFO - <module> - 🕒 Run started at: 2025-05-14 16:35:31
+2025-05-14 16:35:31,585 - INFO - <module> - ==================================================
+2025-05-14 16:35:33,405 - INFO - get_marketplace_items - Found 33 items to post based on general query.
+2025-05-14 16:35:33,410 - INFO - run_bot - Processing account: 0567221396 (1/2)
+2025-05-14 16:35:39,810 - INFO - patch_exe - patching driver executable C:\Users\ngoch\appdata\roaming\undetected_chromedriver\undetected_chromedriver.exe
+2025-05-14 16:35:41,337 - INFO - login_facebook - 🔐 Logging in as 0567221396
+2025-05-14 16:36:05,730 - INFO - save_browser_data - Browser data saved to browser_data\browser_data_edacaf7dfa3b1fe476748de4d3b312a5.json
+2025-05-14 16:36:05,812 - INFO - login_facebook - ✅ Successfully logged in as 0567221396
+2025-05-14 16:36:05,812 - INFO - run_bot - Account 0567221396 will attempt to post up to 3 items. Trying 3 items now.
+2025-05-14 16:38:25,974 - INFO - run_bot - Successfully posted item: 124936479 with account 0567221396
+2025-05-14 16:38:27,433 - INFO - run_bot - Item 124936479 removed from the main list for this bot session.
+2025-05-14 16:40:58,042 - INFO - run_bot - Successfully posted item: 124962156 with account 0567221396
+2025-05-14 16:40:59,414 - INFO - run_bot - Item 124962156 removed from the main list for this bot session.
+2025-05-14 16:43:10,541 - INFO - run_bot - Successfully posted item: 124933933 with account 0567221396
+2025-05-14 16:43:12,114 - INFO - run_bot - Item 124933933 removed from the main list for this bot session.
+2025-05-14 16:43:21,171 - INFO - run_bot - Logging out and closing browser for 0567221396. Posted 3 items this session.
+2025-05-14 16:43:21,595 - INFO - run_bot - Waiting for 130.52 seconds before switching to the next account...
+2025-05-14 16:45:32,108 - INFO - run_bot - Processing account: ngomonone123@gmail.com (2/2)
+2025-05-14 16:45:35,819 - INFO - patch_exe - patching driver executable C:\Users\ngoch\appdata\roaming\undetected_chromedriver\undetected_chromedriver.exe
+2025-05-14 16:45:37,114 - INFO - login_facebook - 🔐 Logging in as ngomonone123@gmail.com
+2025-05-14 16:46:01,229 - INFO - save_browser_data - Browser data saved to browser_data\browser_data_c79e216b7f6d6575b74b8e39372a3eab.json
+2025-05-14 16:46:11,488 - ERROR - login_facebook - ❌ Login failed: Incorrect credentials or unknown error.
+2025-05-14 16:46:11,490 - INFO - run_bot - Login Failed for ngomonone123@gmail.com
+2025-05-14 16:46:11,490 - INFO - run_bot - Logging out and closing browser for ngomonone123@gmail.com. Posted 0 items this session.
+2025-05-14 16:46:11,691 - INFO - run_bot - Last account processed.
+2025-05-14 16:46:11,691 - INFO - run_bot - ==================================================
+2025-05-14 16:46:11,691 - INFO - run_bot - 🛍️ Total Marketplace Items Successfully Posted: 3
+2025-05-14 16:46:11,693 - INFO - run_bot - ❌ Total Marketplace Items Failed: 0
+2025-05-14 16:46:11,693 - INFO - run_bot - ==================================================
+2025-05-14 16:46:42,040 - INFO - <module> - ==================================================
+2025-05-14 16:46:42,042 - INFO - <module> - 🚀 Starting Facebook Marketplace Posting Automation Script
+2025-05-14 16:46:42,042 - INFO - <module> - 🕒 Run started at: 2025-05-14 16:46:42
+2025-05-14 16:46:42,043 - INFO - <module> - ==================================================
+2025-05-14 16:46:43,978 - INFO - get_marketplace_items - Found 30 items to post based on general query.
+2025-05-14 16:46:43,979 - INFO - run_bot - Processing account: ngomonone123@gmail.com (1/1)
+2025-05-14 16:46:47,876 - INFO - patch_exe - patching driver executable C:\Users\ngoch\appdata\roaming\undetected_chromedriver\undetected_chromedriver.exe
+2025-05-14 16:46:48,860 - INFO - login_facebook - 🔐 Logging in as ngomonone123@gmail.com
+2025-05-14 16:46:55,162 - INFO - load_browser_data - Browser data loaded from browser_data\browser_data_c79e216b7f6d6575b74b8e39372a3eab.json
+2025-05-14 16:47:12,722 - INFO - login_facebook - Logged in using saved browser data.
+2025-05-14 16:47:13,755 - ERROR - login_facebook - ❌ Login failed: Incorrect credentials or unknown error.
+2025-05-14 16:47:13,755 - INFO - run_bot - Login Failed for ngomonone123@gmail.com
+2025-05-14 16:47:13,756 - INFO - run_bot - Logging out and closing browser for ngomonone123@gmail.com. Posted 0 items this session.
+2025-05-14 16:47:13,862 - INFO - run_bot - Last account processed.
+2025-05-14 16:47:13,863 - INFO - run_bot - ==================================================
+2025-05-14 16:47:13,863 - INFO - run_bot - 🛍️ Total Marketplace Items Successfully Posted: 0
+2025-05-14 16:47:13,864 - INFO - run_bot - ❌ Total Marketplace Items Failed: 0
+2025-05-14 16:47:13,864 - INFO - run_bot - ==================================================
+2025-05-14 16:52:02,993 - INFO - <module> - ==================================================
+2025-05-14 16:52:02,993 - INFO - <module> - 🚀 Starting Facebook Marketplace Posting Automation Script
+2025-05-14 16:52:02,993 - INFO - <module> - 🕒 Run started at: 2025-05-14 16:52:02
+2025-05-14 16:52:02,994 - INFO - <module> - ==================================================
+2025-05-14 16:52:04,764 - INFO - get_marketplace_items - Found 30 items to post based on general query.
+2025-05-14 16:52:04,765 - INFO - run_bot - Processing account: ngomonone123@gmail.com (1/1)
+2025-05-14 16:52:08,782 - INFO - patch_exe - patching driver executable C:\Users\ngoch\appdata\roaming\undetected_chromedriver\undetected_chromedriver.exe
+2025-05-14 16:52:09,845 - INFO - login_facebook - 🔐 Logging in as ngomonone123@gmail.com
+2025-05-14 16:52:43,288 - INFO - save_browser_data - Browser data saved to browser_data\browser_data_ngomonone123@gmail.com.json
+2025-05-14 16:52:43,363 - INFO - login_facebook - ✅ Successfully logged in as ngomonone123@gmail.com
+2025-05-14 16:52:43,364 - INFO - run_bot - Account ngomonone123@gmail.com will attempt to post up to 3 items. Trying 3 items now.
+2025-05-14 16:54:54,469 - INFO - run_bot - Successfully posted item: 124931247 with account ngomonone123@gmail.com
+2025-05-14 16:54:56,013 - INFO - run_bot - Item 124931247 removed from the main list for this bot session.
+2025-05-14 16:57:41,105 - INFO - run_bot - Successfully posted item: 124955070 with account ngomonone123@gmail.com
+2025-05-14 16:57:42,375 - INFO - run_bot - Item 124955070 removed from the main list for this bot session.
+2025-05-14 17:02:47,944 - INFO - run_bot - Logging out and closing browser for ngomonone123@gmail.com. Posted 2 items this session.
+2025-05-14 17:02:48,751 - INFO - run_bot - Last account processed.
+2025-05-14 17:02:48,751 - INFO - run_bot - ==================================================
+2025-05-14 17:02:48,752 - INFO - run_bot - 🛍️ Total Marketplace Items Successfully Posted: 2
+2025-05-14 17:02:48,753 - INFO - run_bot - ❌ Total Marketplace Items Failed: 1
+2025-05-14 17:02:48,753 - INFO - run_bot - ==================================================
+2025-05-14 17:07:34,892 - INFO - <module> - ==================================================
+2025-05-14 17:07:34,892 - INFO - <module> - 🚀 Starting Facebook Marketplace Posting Automation Script
+2025-05-14 17:07:34,893 - INFO - <module> - 🕒 Run started at: 2025-05-14 17:07:34
+2025-05-14 17:07:34,893 - INFO - <module> - ==================================================
+2025-05-14 17:07:38,822 - INFO - get_marketplace_items - Found 28 items to post based on general query.
+2025-05-14 17:07:38,824 - INFO - run_bot - Processing account: ngomonone123@gmail.com (1/1)
+2025-05-14 17:07:47,085 - INFO - patch_exe - patching driver executable C:\Users\ngoch\appdata\roaming\undetected_chromedriver\undetected_chromedriver.exe
+2025-05-14 17:07:48,588 - INFO - login_facebook - 🔐 Logging in as ngomonone123@gmail.com
+2025-05-14 17:07:55,111 - INFO - load_browser_data - Browser data loaded from browser_data\browser_data_ngomonone123@gmail.com.json
+2025-05-14 17:08:12,202 - INFO - login_facebook - Logged in using saved browser data.
+2025-05-14 17:08:12,222 - INFO - login_facebook - ✅ Successfully logged in as ngomonone123@gmail.com
+2025-05-14 17:08:12,222 - INFO - run_bot - Account ngomonone123@gmail.com will attempt to post up to 3 items. Trying 3 items now.
+2025-05-14 17:10:58,918 - INFO - run_bot - Successfully posted item: 124952479 with account ngomonone123@gmail.com
+2025-05-14 17:11:00,497 - INFO - run_bot - Item 124952479 removed from the main list for this bot session.
+2025-05-14 17:13:42,524 - INFO - run_bot - Successfully posted item: 124919434 with account ngomonone123@gmail.com
+2025-05-14 17:13:44,049 - INFO - run_bot - Item 124919434 removed from the main list for this bot session.
+2025-05-14 17:14:45,370 - INFO - run_bot - Logging out and closing browser for ngomonone123@gmail.com. Posted 2 items this session.
+2025-05-14 17:14:46,330 - INFO - run_bot - Last account processed.
+2025-05-14 17:14:46,332 - INFO - run_bot - ==================================================
+2025-05-14 17:14:46,334 - INFO - run_bot - 🛍️ Total Marketplace Items Successfully Posted: 2
+2025-05-14 17:14:46,334 - INFO - run_bot - ❌ Total Marketplace Items Failed: 1
+2025-05-14 17:14:46,335 - INFO - run_bot - ==================================================
+2025-05-14 17:19:07,655 - INFO - <module> - ==================================================
+2025-05-14 17:19:07,655 - INFO - <module> - 🚀 Starting Facebook Marketplace Posting Automation Script
+2025-05-14 17:19:07,655 - INFO - <module> - 🕒 Run started at: 2025-05-14 17:19:07
+2025-05-14 17:19:07,655 - INFO - <module> - ==================================================
+2025-05-14 17:19:09,565 - INFO - get_marketplace_items - Found 26 items to post based on general query.
+2025-05-14 17:19:09,568 - INFO - run_bot - Processing account: 0567221396 (1/2)
+2025-05-14 17:19:13,397 - INFO - patch_exe - patching driver executable C:\Users\ngoch\appdata\roaming\undetected_chromedriver\undetected_chromedriver.exe
+2025-05-14 17:19:14,884 - INFO - login_facebook - 🔐 Logging in as 0567221396
+2025-05-14 17:19:42,494 - INFO - save_browser_data - Browser data saved to browser_data\browser_data_0567221396.json
+2025-05-14 17:19:42,521 - INFO - login_facebook - ✅ Successfully logged in as 0567221396
+2025-05-14 17:19:42,522 - INFO - run_bot - Account 0567221396 will attempt to post up to 3 items. Trying 3 items now.
+2025-05-14 17:24:39,587 - INFO - run_bot - Successfully posted item: 124951048 with account 0567221396
+2025-05-14 17:24:41,206 - INFO - run_bot - Item 124951048 removed from the main list for this bot session.
+2025-05-14 17:24:46,244 - INFO - run_bot - Logging out and closing browser for 0567221396. Posted 1 items this session.
+2025-05-14 17:24:46,471 - INFO - run_bot - Waiting for 94.28 seconds before switching to the next account...
+2025-05-14 17:26:19,058 - INFO - <module> - ==================================================
+2025-05-14 17:26:19,058 - INFO - <module> - 🚀 Starting Facebook Marketplace Posting Automation Script
+2025-05-14 17:26:19,058 - INFO - <module> - 🕒 Run started at: 2025-05-14 17:26:19
+2025-05-14 17:26:19,058 - INFO - <module> - ==================================================
+2025-05-14 17:26:21,095 - INFO - get_marketplace_items - Found 25 items to post based on general query.
+2025-05-14 17:26:21,097 - INFO - run_bot - Processing account: ngomonone123@gmail.com (1/1)
+2025-05-14 17:26:25,090 - INFO - patch_exe - patching driver executable C:\Users\ngoch\appdata\roaming\undetected_chromedriver\undetected_chromedriver.exe
+2025-05-14 17:26:26,452 - INFO - login_facebook - 🔐 Logging in as ngomonone123@gmail.com
+2025-05-14 17:26:32,925 - INFO - load_browser_data - Browser data loaded from browser_data\browser_data_ngomonone123@gmail.com.json
+2025-05-14 17:26:49,811 - INFO - login_facebook - Logged in using saved browser data.
+2025-05-14 17:26:49,826 - INFO - login_facebook - ✅ Successfully logged in as ngomonone123@gmail.com
+2025-05-14 17:26:49,838 - INFO - run_bot - Account ngomonone123@gmail.com will attempt to post up to 3 items. Trying 3 items now.
+2025-05-14 17:26:59,496 - INFO - run_bot - Logging out and closing browser for ngomonone123@gmail.com. Posted 0 items this session.
+2025-05-14 17:26:59,625 - INFO - run_bot - Last account processed.
